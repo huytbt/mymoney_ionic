@@ -1,0 +1,54 @@
+<!--
+  This template loads for the 'tab.friend-detail' state (app.js)
+  'friend' is a $scope variable created in the FriendsCtrl controller (controllers.js)
+  The FriendsCtrl pulls data from the Friends service (service.js)
+  The Friends service returns an array of friend data
+-->
+<ion-view title="{{transferRequests.year}}-{{transferRequests.month}}">
+  <ion-content>
+    <form>
+      <div class="list">
+        <label class="item item-input">
+          <span class="input-label">Day</span>
+          <input ng-model="bill.day" type="date">
+        </label>
+        <label class="item item-input item-select">
+          <span class="input-label">Budget</span>
+          <select ng-model="bill.budget_id" class="select-align-left">
+            <option ng-repeat="budget in budgets" ng-value="{{budget.id}}">{{budget.title}}</option>
+          </select>
+        </label>
+        <label class="item item-input item-select">
+          <span class="input-label">Asset</span>
+          <select ng-model="bill.asset_id" class="select-align-left">
+            <option ng-repeat="asset in assets" ng-value="{{asset.id}}">{{asset.title}}</option>
+          </select>
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Title</span>
+          <input ng-model="bill.title" type="text">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Amount</span>
+          <input ng-model="bill.amount" type="number">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Description</span>
+          <textarea ng-model="bill.description"></textarea>
+        </label>
+      </div>
+      <div class="row" style="padding: 0px">
+        <div class="col" style="padding: 0px">
+          <button ng-click="submit(bill)" class="button button-full button-{{type==0?'positive':'assertive'}}">
+            {{type==0?'Income':'Expense'}}
+          </button>
+        </div>
+        <div class="col" style="padding: 0px">
+          <button ng-click="submit(bill, true)" class="button button-full button-dark">
+            Continue
+          </button>
+        </div>
+      </div>
+    </form>
+  </ion-content>
+</ion-view>

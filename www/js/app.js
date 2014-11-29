@@ -38,31 +38,37 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
 
         // Each tab has its own nav history stack:
 
-        .state('tab.dash', {
-            url: '/dash',
+        .state('login', {
+            url: '/login',
+            templateUrl: 'templates/login.html',
+            controller: 'LoginCtrl'
+        })
+
+        .state('tab.budget', {
+            url: '/budget?year&month',
             views: {
-                'tab-dash': {
-                    templateUrl: 'templates/tab-dash.html',
-                    controller: 'DashCtrl'
+                'tab-budget': {
+                    templateUrl: 'templates/tab-budget.html',
+                    controller: 'BudgetCtrl'
                 }
             }
         })
 
-        .state('tab.friends', {
-            url: '/friends',
+        .state('tab.bills', {
+            url: '/bills?year&month&budget_id',
             views: {
-                'tab-friends': {
-                    templateUrl: 'templates/tab-friends.html',
-                    controller: 'FriendsCtrl'
+                'tab-bills': {
+                    templateUrl: 'templates/tab-bills.html',
+                    controller: 'BillsCtrl'
                 }
             }
         })
-        .state('tab.friend-detail', {
-            url: '/friend/:friendId',
+        .state('tab.bill-create', {
+            url: '/bills/create?type&year&month&day&budget_id',
             views: {
-                'tab-friends': {
-                    templateUrl: 'templates/friend-detail.html',
-                    controller: 'FriendDetailCtrl'
+                'tab-bills': {
+                    templateUrl: 'templates/bill-form.html',
+                    controller: 'BillCreateCtrl'
                 }
             }
         })
@@ -77,20 +83,10 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
             }
         })
 
-        .state('tab.login', {
-            url: '/login',
-            views: {
-                'tab-login': {
-                    templateUrl: 'templates/tab-login.html',
-                    controller: 'LoginCtrl'
-                }
-            }
-        })
-
         ;
 
     // if none of the above states are matched, use this as the fallback
-    $urlRouterProvider.otherwise('/tab/dash');
+    $urlRouterProvider.otherwise('/tab/budget');
 
 });
 

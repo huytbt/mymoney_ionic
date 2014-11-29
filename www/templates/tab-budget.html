@@ -1,0 +1,56 @@
+<ion-view title="{{transferRequests.year}}-{{transferRequests.month}}">
+  <ion-header-bar class="bar-subheader bar-positive" style="height: 65px;padding: 0px 5px;">
+    <div class="row" style="padding: 0px 5px;">
+      <div class="col text-medium">
+        <div class="text-bold">Income</div>
+        <div>{{statistics.totalIncomeActualAmount | number}}</div>
+        <div class="calm">{{statistics.totalIncomePlanAmount | number}}</div>
+      </div>
+      <div class="col text-medium">
+        <div class="text-bold">Expense</div>
+        <div>{{statistics.totalExpenseActualAmount | number}}</div>
+        <div class="calm">{{statistics.totalExpensePlanAmount | number}}</div>
+      </div>
+      <div class="col col-34 text-medium text-right">
+        <div class="text-bold">Need Income</div>
+        <div>{{statistics.totalNeedIncomeActualAmount | number}}</div>
+        <div class="calm">{{statistics.totalNeedIncomeAmount | number}}</div>
+      </div>
+    </div>
+  </ion-header-bar>
+  <ion-content style="top: 110px;">
+    <div class="list-not-found" ng-show="budgets.length==0">
+      Budgets Not Found
+    </div>
+    <ion-list>
+      <ion-item ng-repeat="budget in budgets" class="item-text item-padding-3" ng-click="goBills(budget)">
+        <div class="row" style="padding: 0px">
+          <div class="col">
+            <div><span class="label label-{{budget.statusTracking < 5 ? 'info' : (budget.statusTracking < 10 ? 'success' : 'important')}} text-small">{{budget.category}}</span></div>
+            <div class="text-small">{{budget.title}}</div>
+          </div>
+          <div class="col col-75">
+            <div title="{{budget.percentDayTracking}}%" style="height:40px;margin:0px;" class="progress progress-{{budget.statusTracking<5?'info':(budget.statusTracking<10?'success':'danger')}} {{budget.day_tracking==1?'progress-striped':''}}">
+              <div class="text-medium" style="text-align:left;padding-left:5px;float:left;">
+                <div>Type: {{budget.type == 1 ? 'Expense' : 'Income'}}</div>
+                <div>Percent: {{budget.percentDayTracking}}%</div>
+              </div>
+              <div class="text-medium" style="text-align:right;padding-right:5px;float:right;width:50%">
+                <div>Plan: {{budget.amount | number}}</div>
+                <div>Actual: {{budget.actual_amount | number}}</div>
+              </div>
+              <div class="bar" style="width: {{budget.percentDayTracking}}%;opacity: 0.3"></div>
+            </div>
+          </div>
+          <ion-option-button class="button-positive text-medium" style="padding-top: 7px;">Edit</ion-option-button>
+          <ion-option-button class="button-assertive text-medium" style="padding-top: 7px;">Delete</ion-option-button>
+        </div>
+      </ion-item>
+    </ion-list>
+    <div>
+      <button class="button button-full button-royal">
+        Create New Budget on {{transferRequests.month}}/{{transferRequests.year}}
+      </button>
+    </div>
+  </ion-content>
+</ion-view>

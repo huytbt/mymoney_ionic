@@ -23,18 +23,23 @@
       </ion-nav-buttons>
 
       <!-- Budget Tab -->
-      <ion-tab title="Budget" icon="icon ion-briefcase" ng-click="goBudgetsPage()">
+      <ion-tab title="Budget" icon="icon ion-briefcase" ng-click="goToPage('/tab/budget')">
         <ion-nav-view name="tab-budget"></ion-nav-view>
       </ion-tab>
 
       <!-- Bills Tab -->
-      <ion-tab title="Bills" icon="icon ion-clipboard" ng-click="goBillsPage()">
+      <ion-tab title="Bills" icon="icon ion-clipboard" ng-click="goToPage('/tab/bills')">
         <ion-nav-view name="tab-bills"></ion-nav-view>
       </ion-tab>
 
+      <!-- Transfer Tab -->
+      <ion-tab title="Transfer" icon="icon ion-arrow-swap" ng-click="goToPage('/tab/transfers')">
+        <ion-nav-view name="tab-transfers"></ion-nav-view>
+      </ion-tab>
+
       <!-- Account Tab -->
-      <ion-tab title="Account" icon="icon ion-filing" href="#/tab/account">
-        <ion-nav-view name="tab-account"></ion-nav-view>
+      <ion-tab title="Assets" icon="icon ion-filing" ng-click="goToPage('/tab/assets')">
+        <ion-nav-view name="tab-assets"></ion-nav-view>
       </ion-tab>
 
     </ion-tabs>
@@ -47,17 +52,23 @@
     </header>
     <ion-content class="has-header">
       <ion-list>
-        <ion-item nav-clear menu-close ng-click="goBudgetsPage()">
+        <ion-item nav-clear menu-close ng-click="goToPage('/tab/budget')">
           <i class="icon ion-briefcase"></i> Budget
         </ion-item>
-        <ion-item nav-clear menu-close ng-click="goBillsPage()">
+        <ion-item nav-clear menu-close ng-click="goToPage('/tab/bills')">
           <i class="icon ion-clipboard"></i> Bills
         </ion-item>
-        <ion-item nav-clear menu-close href="#/tab/account">
-          <i class="icon ion-filing"></i> Account
+        <ion-item nav-clear menu-close ng-click="goToPage('/tab/transfers')">
+          <i class="icon ion-arrow-swap"></i> Transfers
+        </ion-item>
+        <ion-item nav-clear menu-close ng-click="goToPage('/tab/assets')">
+          <i class="icon ion-filing"></i> Assets
         </ion-item>
         <ion-item nav-clear menu-close ng-click="goCurrentDay()">
           <i class="icon ion-ionic"></i> Go Today
+        </ion-item>
+        <ion-item nav-clear menu-close ng-click="reloadAll()">
+          <i class="icon ion-refresh"></i> Reload
         </ion-item>
         <ion-item nav-clear menu-close href="#/login">
           <i class="icon ion-log-out"></i> Logout

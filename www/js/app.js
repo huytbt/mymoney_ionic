@@ -53,6 +53,15 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
                 }
             }
         })
+        .state('tab.budget-form', {
+            url: '/budgets/form?year&month&budget_id&category_id&title&amount&type&day_tracking&description&edit',
+            views: {
+                'tab-budget': {
+                    templateUrl: 'templates/budget-form.html',
+                    controller: 'BudgetFormCtrl'
+                }
+            }
+        })
 
         .state('tab.bills', {
             url: '/bills?year&month&budget_id',
@@ -63,22 +72,50 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
                 }
             }
         })
-        .state('tab.bill-create', {
-            url: '/bills/create?type&year&month&day&budget_id',
+        .state('tab.bill-form', {
+            url: '/bills/form?id&type&year&month&day&title&amount&description&asset_id&budget_id&edit',
             views: {
                 'tab-bills': {
                     templateUrl: 'templates/bill-form.html',
-                    controller: 'BillCreateCtrl'
+                    controller: 'BillFormCtrl'
                 }
             }
         })
 
-        .state('tab.account', {
-            url: '/account',
+        .state('tab.transfer', {
+            url: '/transfers?year&month',
             views: {
-                'tab-account': {
-                    templateUrl: 'templates/tab-account.html',
-                    controller: 'AccountCtrl'
+                'tab-transfers': {
+                    templateUrl: 'templates/tab-transfers.html',
+                    controller: 'TransfersCtrl'
+                }
+            }
+        })
+        .state('tab.transfer-form', {
+            url: '/transfers/form?id&type&year&month&day&title&description&amount&fee&from_account_id&to_account_id&edit',
+            views: {
+                'tab-transfers': {
+                    templateUrl: 'templates/transfer-form.html',
+                    controller: 'TransferFormCtrl'
+                }
+            }
+        })
+
+        .state('tab.asset', {
+            url: '/assets?year&month',
+            views: {
+                'tab-assets': {
+                    templateUrl: 'templates/tab-assets.html',
+                    controller: 'AssetsCtrl'
+                }
+            }
+        })
+        .state('tab.asset-form', {
+            url: '/assets/form?id&group_id&title&description&amount&keep_amount&is_save_account&is_enable&edit',
+            views: {
+                'tab-assets': {
+                    templateUrl: 'templates/asset-form.html',
+                    controller: 'AssetFormCtrl'
                 }
             }
         })

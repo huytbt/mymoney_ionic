@@ -1,0 +1,28 @@
+<ion-view title="Asset Accounts">
+  <ion-content>
+    <div class="list-not-found" ng-show="assets.length==0">
+      Account Not Found
+    </div>
+    <ion-list>
+      <ion-item ng-repeat="asset in assets" class="item-text item-padding-3" ng-click="editAsset(asset)">
+        <div class="row" style="padding: 0px">
+          <div class="col col-25">
+            <div class="text-medium text-bold">{{asset.title}}</div>
+            <div class="text-small">{{asset.group_name}}</div>
+          </div>
+          <div class="col text-medium">
+            <div class="text-medium">Current Money: <span class="text-bold">{{asset.amount_current | number}}</span></div>
+            <div class="text-small text-expense">Keep: {{asset.keep_amount | number}}</div>
+          </div>
+          <ion-option-button class="button-positive text-medium" style="padding-top: 7px;" ng-click="editAsset(asset)">Edit</ion-option-button>
+          <ion-option-button class="button-assertive text-medium" style="padding-top: 7px;" ng-click="deleteAsset(asset)">Delete</ion-option-button>
+        </div>
+      </ion-item>
+    </ion-list>
+    <div ng-controller="CommonCtrl">
+      <button class="button button-full button-royal" ng-click="goToPage('/tab/assets/form')">
+        Create Acount
+      </button>
+    </div>
+  </ion-content>
+</ion-view>

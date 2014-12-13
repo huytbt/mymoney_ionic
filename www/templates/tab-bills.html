@@ -1,5 +1,5 @@
 <ion-view title="{{transferRequests.year}}-{{transferRequests.month | number}}">
-  <ion-header-bar class="bar-subheader bar-positive" style="height: 65px;padding: 0px 5px;">
+  <ion-header-bar class="bar-subheader bar-positive" style="height: 65px !important;padding: 0px 5px;">
     <div class="row" style="padding: 0px 5px;">
       <div class="col text-medium">
         <div class="text-bold">Income</div>
@@ -18,13 +18,13 @@
       </div>
     </div>
   </ion-header-bar>
-  <ion-content style="top: 110px;">
+  <ion-content style="top: 130px !important;">
     <div class="list-not-found" ng-show="bills.length==0">
       Bills Not Found
     </div>
     <ion-list can-swipe="false">
       <ion-item ng-repeat="bill in bills" class="item-text item-padding-5">
-        <div class="row bill-row-header">
+        <div class="row bill-row-header" ng-controller="CommonCtrl" ng-click="goCreateBill(1, bill.day)">
           <div class="col">
             <span class="bill-day-text">{{bill.day}}</span>
             <span class="text-small">{{bill.year_month}}</span>
@@ -47,8 +47,8 @@
                 {{bill.amount | number}}
               </div>
             </div>
-            <ion-option-button class="button-positive text-medium">Edit</ion-option-button>
-            <ion-option-button class="button-assertive text-medium">Delete</ion-option-button>
+            <ion-option-button class="button-positive text-medium" ng-click="editBill(bill)">Edit</ion-option-button>
+            <ion-option-button class="button-assertive text-medium" ng-click="deleteBill(bill)">Delete</ion-option-button>
           </ion-item>
         </ion-list>
       </ion-item>

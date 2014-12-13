@@ -1,0 +1,37 @@
+<ion-view title="Account">
+  <ion-content>
+    <form>
+      <div class="list">
+        <label class="item item-input item-select">
+          <span class="input-label">Group</span>
+          <select ng-options="group.name for group in groups track by group.id" ng-model="asset.group" class="select-align-left">
+          </select>
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Title</span>
+          <input ng-model="asset.title" type="text">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Amount</span>
+          <input ng-model="asset.amount" type="number">
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Keep Amount</span>
+          <input ng-model="asset.keep_amount" type="number">
+        </label>
+        <label class="item item-input item-select">
+          <span class="input-label">Is Save Account</span>
+          <select ng-options="option for option in saveOptions" ng-model="asset.is_save_account" class="select-align-left">
+          </select>
+        </label>
+        <label class="item item-input">
+          <span class="input-label">Description</span>
+          <textarea ng-model="asset.description"></textarea>
+        </label>
+      </div>
+      <button ng-click="submit(asset)" class="button button-full button-royal">
+        Submit
+      </button>
+    </form>
+  </ion-content>
+</ion-view>

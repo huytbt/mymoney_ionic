@@ -1,5 +1,5 @@
 <ion-view title="{{transferRequests.year}}-{{transferRequests.month}}">
-  <ion-header-bar class="bar-subheader bar-positive" style="height: 65px;padding: 0px 5px;">
+  <ion-header-bar class="bar-subheader bar-positive" style="height: 65px !important;padding: 0px 5px;">
     <div class="row" style="padding: 0px 5px;">
       <div class="col text-medium">
         <div class="text-bold">Income</div>
@@ -18,7 +18,7 @@
       </div>
     </div>
   </ion-header-bar>
-  <ion-content style="top: 110px;">
+  <ion-content style="top: 130px !important;">
     <div class="list-not-found" ng-show="budgets.length==0">
       Budgets Not Found
     </div>
@@ -42,13 +42,13 @@
               <div class="bar" style="width: {{budget.percentDayTracking}}%;opacity: 0.3"></div>
             </div>
           </div>
-          <ion-option-button class="button-positive text-medium" style="padding-top: 7px;">Edit</ion-option-button>
-          <ion-option-button class="button-assertive text-medium" style="padding-top: 7px;">Delete</ion-option-button>
+          <ion-option-button class="button-positive text-medium" style="padding-top: 7px;" ng-click="editBudget(budget)">Edit</ion-option-button>
+          <ion-option-button class="button-assertive text-medium" style="padding-top: 7px;" ng-click="deleteBudget(budget)">Delete</ion-option-button>
         </div>
       </ion-item>
     </ion-list>
-    <div>
-      <button class="button button-full button-royal">
+    <div ng-controller="CommonCtrl">
+      <button class="button button-full button-royal" ng-click="goToPage('/tab/budgets/form')">
         Create New Budget on {{transferRequests.month}}/{{transferRequests.year}}
       </button>
     </div>

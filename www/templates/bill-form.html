@@ -13,15 +13,13 @@
           <input ng-model="bill.day" type="date">
         </label>
         <label class="item item-input item-select">
-          <span class="input-label">Budget</span>
-          <select ng-model="bill.budget_id" class="select-align-left">
-            <option ng-repeat="budget in budgets" ng-value="{{budget.id}}">{{budget.title}}</option>
+          <span class="input-label">Asset</span>
+          <select ng-options="asset.title for asset in assets track by asset.id" ng-model="bill.asset_id" class="select-align-left">
           </select>
         </label>
         <label class="item item-input item-select">
-          <span class="input-label">Asset</span>
-          <select ng-model="bill.asset_id" class="select-align-left">
-            <option ng-repeat="asset in assets" ng-value="{{asset.id}}">{{asset.title}}</option>
+          <span class="input-label">Budget</span>
+          <select ng-options="budget.title for budget in budgets track by budget.id" ng-model="bill.budget_id" class="select-align-left">
           </select>
         </label>
         <label class="item item-input">

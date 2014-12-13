@@ -1,6 +1,7 @@
 angular.module('starter.services', [])
 
 .constant('DATABASE_API_URL', 'http://api-autotest.toancauxanh.vn/sqliteapi')
+// .constant('DATABASE_API_URL', 'http://mymoneyapi.gopagoda.com')
 // .constant('DATABASE_API_URL', 'http://local.mymoney.com:8080/sqliteapi')
 
 /**
@@ -66,14 +67,95 @@ angular.module('starter.services', [])
  */
 .factory('MMAsset', function(Cache, Database, Utils, API) {
   return {
-    getAssets: function() {
+    getAssets: function(more) {
       var cacheKey = 'assets';
+      if (!Utils.isEmpty(more)) {
+        cacheKey += more;
+      }
       var cache = Cache.get(cacheKey);
       if (!Utils.isEmpty(cache)) {
         return cache;
       }
 
       var uri = '/assets';
+      if (!Utils.isEmpty(more)) {
+        uri += more;
+      }
+      var assets = [];
+      var data = API.get(uri);
+      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
+        assets = data.items;
+      }
+
+      Cache.put(cacheKey, assets);
+
+      return assets;
+    },
+    getGroups: function() {
+      var cacheKey = 'asset-groups';
+      var cache = Cache.get(cacheKey);
+      if (!Utils.isEmpty(cache)) {
+        return cache;
+      }
+
+      var uri = '/asset-groups';
+      var groups = [];
+      var data = API.get(uri);
+      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
+        groups = data.items;
+      }
+
+      Cache.put(cacheKey, groups);
+
+      return groups;
+    }
+  }
+})
+
+
+.factory('MMAssetTransfer', function(Cache, Database, Utils, API) {
+  return {
+    getTransfersByMonth: function(month, year) {
+      var cacheKey = 'getTransfersByMonth'+year+month;
+      var cache = Cache.get(cacheKey);
+      if (!Utils.isEmpty(cache)) {
+        return cache;
+      }
+
+      var uri = '/transfers/:month/:year';
+      var params = {
+        ':month': month,
+        ':year': year
+      };
+      var transfers = [];
+      var data = API.get(uri, params);
+      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
+        transfers = data.items;
+      }
+
+      Cache.put(cacheKey, transfers);
+
+      return transfers;
+    }
+  }
+})
+
+
+/**
+ * Category Model
+ *
+ * @author HuyTBT <huytbt@gmail.com>
+ */
+.factory('MMCategory', function(Cache, Database, Utils, API) {
+  return {
+    getCategories: function() {
+      var cacheKey = 'categories';
+      var cache = Cache.get(cacheKey);
+      if (!Utils.isEmpty(cache)) {
+        return cache;
+      }
+
+      var uri = '/categories';
       var assets = [];
       var data = API.get(uri);
       if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
@@ -180,16 +262,21 @@ angular.module('starter.services', [])
       return currentDate / days * 100;
     },
     getCurrentDay: function() {
-      return $filter('date')(new Date, 'd');
+      return parseInt($filter('date')(new Date, 'd'));
     },
     getCurrentMonth: function() {
-      return $filter('date')(new Date, 'M');
+      return parseInt($filter('date')(new Date, 'M'));
     },
     getCurrentYear: function() {
-      return $filter('date')(new Date, 'yyyy');
+      return parseInt($filter('date')(new Date, 'yyyy'));
     },
     getTotalDaysOfMonth: function(year, month) {
       return (new Date(year, month, 0)).getDate();
+    },
+    numPad: function(num, size) {
+      var s = num+"";
+      while (s.length < size) s = "0" + s;
+      return s;
     }
   }
 })
@@ -199,8 +286,43 @@ angular.module('starter.services', [])
  *
  * @author HuyTBT <huytbt@gmail.com>
  */
-.factory('Cache', function($cookieStore, $cacheFactory) {
+.factory('Cache', function($cacheFactory, $localstorage, Utils) {
+  return {
+    get: function(key) {
+      var cache = $localstorage.get('cache');
+      if (Utils.isEmpty(cache)) {
+        return null;
+      }
+      return cache[key];
+    },
+    put: function(key, value) {
+      var cache = $localstorage.get('cache');
+      if (Utils.isEmpty(cache)) {
+        cache = {};
+      }
+      cache[key] = value;
+      $localstorage.put('cache', cache);
+    },
+    remove: function(key) {
+      var cache = $localstorage.get('cache');
+      cache[key] = null;
+      delete cache[key];
+      $localstorage.put('cache', cache);
+    },
+    removeAll: function() {
+      $localstorage.remove('cache');
+    }
+  }
   return $cacheFactory('super-cache');
+})
+
+/**
+ * Cookie Component
+ *
+ * @author HuyTBT <huytbt@gmail.com>
+ */
+.factory('CookieComponent', function($cookieStore, $localstorage) {
+  return $localstorage;
 })
 
 /**
@@ -208,7 +330,7 @@ angular.module('starter.services', [])
  *
  * @author HuyTBT <huytbt@gmail.com>
  */
-.factory('Auth', function($cookieStore, $location, Utils) {
+.factory('Auth', function(CookieComponent, $location, Utils) {
   return {
     requireLogin: function() {
       if (!this.isLogged()) {
@@ -216,15 +338,49 @@ angular.module('starter.services', [])
       }
     },
     isLogged: function() {
-      if (Utils.isEmpty($cookieStore.get('auth'))) {
+      if (Utils.isEmpty(CookieComponent.get('auth'))) {
         return false;
       }
       return true;
+    },
+    login: function(user, pass) {
+      CookieComponent.put('auth', {
+          user: user,
+          pass: pass
+      });
+    },
+    logout: function() {
+      CookieComponent.remove('auth');
     }
   }
 })
 
-.factory('API', function($http, $cookieStore, DATABASE_API_URL, Utils) {
+.factory('$localstorage', ['$window', function($window) {
+  return {
+    put: function(key, value) {
+      if (typeof value == 'object') {
+        $window.localStorage[key] = JSON.stringify(value);
+      } else {
+        $window.localStorage[key] = value;
+      }
+    },
+    get: function(key) {
+      try {
+        return JSON.parse($window.localStorage[key]);
+      } catch (e) {
+        return $window.localStorage[key];
+      }
+    },
+    remove: function(key) {
+      $window.localStorage.removeItem(key);
+    },
+    removeAll: function() {
+      $window.localStorage.clear();
+    }
+  }
+}])
+
+.factory('API', function($http, Cache, CookieComponent, DATABASE_API_URL, Utils) {
   return {
     get: function(uri, params) {
       var data = [];
@@ -241,8 +397,8 @@ angular.module('starter.services', [])
       request.open('GET', DATABASE_API_URL + uri, false);  // `false` makes the request synchronous
 
       // send request headers
-      if (!Utils.isEmpty($cookieStore.get('auth'))) {
-        angular.forEach($cookieStore.get('auth'), function(value, key) {
+      if (!Utils.isEmpty(CookieComponent.get('auth'))) {
+        angular.forEach(CookieComponent.get('auth'), function(value, key) {
           if (!Utils.isEmpty(value)) {
             request.setRequestHeader(key, value);
           }
@@ -262,7 +418,7 @@ angular.module('starter.services', [])
 
       return data;
     },
-    post: function(uri, params, data) {
+    request: function(method, uri, params, data) {
       var request = new XMLHttpRequest();
 
       // binding parameters
@@ -273,7 +429,7 @@ angular.module('starter.services', [])
       }
 
       // open request
-      request.open('POST', DATABASE_API_URL + uri, false);  // `false` makes the request synchronous
+      request.open(method, DATABASE_API_URL + uri, false);  // `false` makes the request synchronous
 
       var strData = [];
       angular.forEach(data, function(value, key) {
@@ -285,8 +441,8 @@ angular.module('starter.services', [])
       request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
       // request.setRequestHeader("Content-length", strData.length);
       // request.setRequestHeader("Connection", "close");
-      if (!Utils.isEmpty($cookieStore.get('auth'))) {
-        angular.forEach($cookieStore.get('auth'), function(value, key) {
+      if (!Utils.isEmpty(CookieComponent.get('auth'))) {
+        angular.forEach(CookieComponent.get('auth'), function(value, key) {
           if (!Utils.isEmpty(value)) {
             request.setRequestHeader(key, value);
           }
@@ -304,6 +460,18 @@ angular.module('starter.services', [])
       }
 
       return data;
+    },
+    post: function(uri, params, data) {
+      Cache.removeAll();
+      return this.request('POST', uri, params, data);
+    },
+    put: function(uri, params, data) {
+      Cache.removeAll();
+      return this.request('PUT', uri, params, data);
+    },
+    delete: function(uri, params, data) {
+      Cache.removeAll();
+      return this.request('DELETE', uri, params, data);
     }
   }
 })
@@ -313,7 +481,7 @@ angular.module('starter.services', [])
  *
  * @author HuyTBT <huytbt@gmail.com>
  */
-.factory('Database', function($http, $cookieStore, DATABASE_API_URL, Utils) {
+.factory('Database', function($http, CookieComponent, DATABASE_API_URL, Utils) {
   return {
     query: function(q, params, asynchronous) {
       var items = [];
@@ -335,8 +503,8 @@ angular.module('starter.services', [])
       request.open('GET', DATABASE_API_URL + '/query?query=' + encodeURIComponent(q), asynchronous);  // `false` makes the request synchronous
 
       // send request headers
-      if (!Utils.isEmpty($cookieStore.get('auth'))) {
-        angular.forEach($cookieStore.get('auth'), function(value, key) {
+      if (!Utils.isEmpty(CookieComponent.get('auth'))) {
+        angular.forEach(CookieComponent.get('auth'), function(value, key) {
           if (!Utils.isEmpty(value)) {
             request.setRequestHeader(key, value);
           }
@@ -377,8 +545,8 @@ angular.module('starter.services', [])
       request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
       request.setRequestHeader("Content-length", strParams.length);
       request.setRequestHeader("Connection", "close");
-      if (!Utils.isEmpty($cookieStore.get('auth'))) {
-        angular.forEach($cookieStore.get('auth'), function(value, key) {
+      if (!Utils.isEmpty(CookieComponent.get('auth'))) {
+        angular.forEach(CookieComponent.get('auth'), function(value, key) {
           if (!Utils.isEmpty(value)) {
             request.setRequestHeader(key, value);
           }

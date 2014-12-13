@@ -1,0 +1,32 @@
+<ion-view title="{{transferRequests.year}}-{{transferRequests.month}}">
+  <ion-content>
+    <div class="list-not-found" ng-show="transfers.length==0">
+      Transfers Not Found
+    </div>
+    <ion-list>
+      <ion-item ng-repeat="transfer in transfers" class="item-text item-padding-3" ng-click="editTransfer(transfer)">
+        <div class="row" style="padding: 0px">
+          <div class="col">
+            <div class="text-medium">{{transfer.year}}-{{transfer.month}}-{{transfer.day}}</div>
+            <div class="text-wrap text-small">{{transfer.title}}</div>
+          </div>
+          <div class="col text-small">
+            <div>From: {{transfer.from_account_text}}</div>
+            <div>To: {{transfer.to_account_text}}</div>
+          </div>
+          <div class="col text-medium text-right">
+            <div>{{transfer.amount | number}}</div>
+            <div class="text-small text-expense">- {{transfer.fee | number}}</div>
+          </div>
+          <ion-option-button class="button-positive text-medium" style="padding-top: 7px;" ng-click="editTransfer(transfer)">Edit</ion-option-button>
+          <ion-option-button class="button-assertive text-medium" style="padding-top: 7px;" ng-click="deleteTransfer(transfer)">Delete</ion-option-button>
+        </div>
+      </ion-item>
+    </ion-list>
+    <div ng-controller="CommonCtrl">
+      <button class="button button-full button-royal" ng-click="goToPage('/tab/transfers/form')">
+        Transfer on {{transferRequests.month}}/{{transferRequests.year}}
+      </button>
+    </div>
+  </ion-content>
+</ion-view>

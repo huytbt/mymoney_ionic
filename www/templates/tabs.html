@@ -52,16 +52,16 @@
     </header>
     <ion-content class="has-header">
       <ion-list>
-        <ion-item nav-clear menu-close ng-click="goToPage('/tab/budget')">
+        <ion-item nav-clear ui-sref="tab.budget" ui-sref-active="activated" menu-close ng-click="goToPage('/tab/budget')">
           <i class="icon ion-briefcase"></i> Budget
         </ion-item>
-        <ion-item nav-clear menu-close ng-click="goToPage('/tab/bills')">
+        <ion-item nav-clear ui-sref="tab.bills" ui-sref-active="activated" menu-close ng-click="goToPage('/tab/bills')">
           <i class="icon ion-clipboard"></i> Bills
         </ion-item>
-        <ion-item nav-clear menu-close ng-click="goToPage('/tab/transfers')">
+        <ion-item nav-clear ui-sref="tab.transfer" ui-sref-active="activated" menu-close ng-click="goToPage('/tab/transfers')">
           <i class="icon ion-arrow-swap"></i> Transfers
         </ion-item>
-        <ion-item nav-clear menu-close ng-click="goToPage('/tab/assets')">
+        <ion-item nav-clear ui-sref="tab.asset" ui-sref-active="activated" menu-close ng-click="goToPage('/tab/assets')">
           <i class="icon ion-filing"></i> Assets
         </ion-item>
         <ion-item nav-clear menu-close ng-click="goCurrentDay()">

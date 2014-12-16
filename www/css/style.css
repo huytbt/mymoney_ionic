@@ -59,6 +59,89 @@
   direction:ltr !important;
 }
 
+fancy-calc .margin-right {
+  margin-right: 16px;
+}
+
+fancy-calc .button {
+  border: 1px solid #eee;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+  padding: 0px 8px;
+}
+
+@media (min-width: 680px) {
+  .fancy-calc {
+    min-height: 340px;
+    height: 400px;
+    width: 40%;
+    left: 30%;
+  }
+}
+
+.fancy-calc .fancy-calc-result {
+  border: 1px solid #eee;
+  padding: 24px 6px;
+  font-weight: bold;
+}
+
+.fancy-calc .button {
+  margin: 0px;
+  border: 1px solid #eee;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+}
+
+.fancy-calc .fancy-calc-result[disabled] {
+  background: #fff;
+}
+
+fancy-select {
+  width: 100%;
+}
+fancy-select .fancy-select-item {
+  width: 100%;
+  max-width: 100%;
+  padding: 7px 10px 7px 0px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+fancy-select .list {
+  margin: -1px 0; }
+
+/* Items */
+/* line 13, ../scss/modules/_fancy-select.scss */
+  /* line 19, ../scss/modules/_fancy-select.scss */
+.fancy-select-items .item {
+  overflow: hidden;
+  padding: 12px;
+  /* Clearfix */
+}
+
+.fancy-select-items .item-divider {
+  padding: 3px 12px;
+}
+
+.fancy-select-items .item-activated {
+  border-color: #ccc;
+  background-color: #D9D9D9; 
+}
+
+/* line 24, ../scss/modules/_fancy-select.scss */
+.fancy-select-items label p {
+  height: 32px;
+  line-height: 32px; }
+
+/* line 29, ../scss/modules/_fancy-select.scss */
+.fancy-select-icon {
+  float: left;
+  margin-right: 10px;
+  width: 30px;
+  text-align: center; }
+
 /* Bootstrap */
 
 .label,

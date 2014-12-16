@@ -23,7 +23,7 @@ angular.module('starter.controllers', [])
     }
     $scope.editBudget = function(budget) {
         budget.edit = 1;
-        $location.path('/tab/budgets/form').search(budget);
+        $location.path('/tab/budget/form').search(budget);
     }
     $scope.deleteBudget = function(budget) {
         var confirmPopup = $ionicPopup.confirm({
@@ -66,7 +66,8 @@ angular.module('starter.controllers', [])
     for (i = 2013; i <= parseInt(Utils.getCurrentYear()) + 1; i++) {
         $scope.years[$scope.years.length] = i;
     }
-    $scope.months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    $scope.months = [{id: 1, name: "January"}, {id: 2, name: "February"}, {id: 3, name: "March"}, {id: 4, name: "April"}, {id: 5, name: "May"}, {id: 6, name: "June"}, {id: 7, name: "July"}, {id: 8, name: "August"}, {id: 9, name: "September"}, {id: 10, name: "October"}, {id: 11, name: "November"}, {id: 12, name: "December"}];
+    
     $scope.types = ['Income', 'Expense'];
     $scope.trackings = ['None', 'Day by day'];
     $scope.categories = MMCategory.getCategories();
@@ -75,29 +76,22 @@ angular.module('starter.controllers', [])
         year: year,
         month: month,
         type: 'Expense',
-        tracking: 'None'
+        tracking: false
     };
 
     if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
-        if (!Utils.isEmpty($stateParams.category_id)) {
-            angular.forEach($scope.categories, function(value, key) {
-                if (value.id == $stateParams.category_id) {
-                    $scope.budget.category = value;
-                    return;
-                }
-            });
-        }
+        $scope.budget.category_id = $stateParams.category_id;
         $scope.budget.year = parseInt($stateParams.year);
         $scope.budget.month = parseInt($stateParams.month);
         $scope.budget.title = $stateParams.title;
         $scope.budget.amount = parseInt($stateParams.amount);
         $scope.budget.description = $stateParams.description;
         $scope.budget.type = $stateParams.type == 0 ? 'Income' : 'Expense';
-        $scope.budget.tracking = $stateParams.day_tracking == 0 ? 'None' : 'Day by day';
+        $scope.budget.tracking = $stateParams.day_tracking == 0 ? false : true;
     }
 
     $scope.submit = function(budget) {
-        if (Utils.isEmpty(budget.category)) {
+        if (Utils.isEmpty(budget.category_id)) {
             $ionicPopup.alert({
                 title: 'Category cannot be blank.'
             });
@@ -120,8 +114,7 @@ angular.module('starter.controllers', [])
         angular.forEach(budget, function(value, key) {
             postform[key] = value;
         });
-        postform.category_id = budget.category.id;
-        postform.tracking = budget.tracking == 'None' ? 0 : 1;
+        postform.tracking = budget.tracking == false ? 0 : 1;
         postform.type = budget.type == 'Income' ? 0 : 1;
         if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
             var resp = API.put('/budgets/:budget_id', {
@@ -221,12 +214,6 @@ angular.module('starter.controllers', [])
 
     $scope.type = type;
 
-    // day select
-    var days = [];
-    var totalDaysOfMonth = Utils.getTotalDaysOfMonth(year, month);
-    for (i=1; i<=totalDaysOfMonth; i++) days[days.length] = i;
-    $scope.days = days;
-
     // budget select
     $scope.budgets = MMViewBudget.getBudgets(month, year, type);
 
@@ -235,34 +222,19 @@ angular.module('starter.controllers', [])
 
     $scope.bill = {
         day: year + '-' + Utils.numPad(month, 2) + '-' + Utils.numPad(day, 2),
-        asset_id: $scope.assets[0]
+        asset_id: $scope.assets[0].id,
     };
 
     if (!Utils.isEmpty($stateParams.budget_id)) {
-        angular.forEach($scope.budgets, function(value, key) {
-            if (value.id == $stateParams.budget_id) {
-                $scope.bill.budget_id = value;
-                return;
-            }
-        });
+        $scope.bill.budget_id = $stateParams.budget_id;
     }
 
     if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
         if (!Utils.isEmpty($stateParams.budget_id)) {
-            angular.forEach($scope.budgets, function(value, key) {
-                if (value.id == $stateParams.budget_id) {
-                    $scope.bill.budget_id = value;
-                    return;
-                }
-            });
+            $scope.bill.budget_id = $stateParams.budget_id;
         }
         if (!Utils.isEmpty($stateParams.asset_id)) {
-            angular.forEach($scope.assets, function(value, key) {
-                if (value.id == $stateParams.asset_id) {
-                    $scope.bill.asset_id = value;
-                    return;
-                }
-            });
+            $scope.bill.asset_id = $stateParams.asset_id;
         }
         $scope.bill.title = $stateParams.title;
         $scope.bill.amount = parseInt($stateParams.amount);
@@ -293,8 +265,6 @@ angular.module('starter.controllers', [])
         angular.forEach(bill, function(value, key) {
             postform[key] = value;
         });
-        postform.budget_id = bill.budget_id.id;
-        postform.asset_id = bill.asset_id.id;
         if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
             var resp = API.put('/bills/:bill_id', {
                 ':bill_id': $stateParams.id
@@ -402,21 +372,11 @@ angular.module('starter.controllers', [])
 
     if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
         if (!Utils.isEmpty($stateParams.from_account_id)) {
-            angular.forEach($scope.assets, function(value, key) {
-                if (value.id == $stateParams.from_account_id) {
-                    $scope.transfer.from_asset = value;
-                    return;
-                }
-            });
+            $scope.transfer.from_account_id = $stateParams.from_account_id;
         }
 
         if (!Utils.isEmpty($stateParams.to_account_id)) {
-            angular.forEach($scope.assets, function(value, key) {
-                if (value.id == $stateParams.to_account_id) {
-                    $scope.transfer.to_asset = value;
-                    return;
-                }
-            });
+            $scope.transfer.to_account_id = $stateParams.to_account_id;
         }
         $scope.transfer.title = $stateParams.title;
         $scope.transfer.amount = parseInt($stateParams.amount);
@@ -425,19 +385,19 @@ angular.module('starter.controllers', [])
     }
 
     $scope.submit = function(transfer) {
-        if (Utils.isEmpty(transfer.from_asset)) {
+        if (Utils.isEmpty(transfer.from_account_id)) {
             $ionicPopup.alert({
                 title: 'Account Source cannot be blank.'
             });
             return;
         }
-        if (Utils.isEmpty(transfer.to_asset)) {
+        if (Utils.isEmpty(transfer.to_account_id)) {
             $ionicPopup.alert({
                 title: 'Account Destination cannot be blank.'
             });
             return;
         }
-        if (transfer.from_asset == transfer.to_asset) {
+        if (transfer.from_account_id == transfer.to_account_id) {
             $ionicPopup.alert({
                 title: 'Account Source and Destination must difference.'
             });
@@ -453,8 +413,6 @@ angular.module('starter.controllers', [])
         angular.forEach(transfer, function(value, key) {
             postform[key] = value;
         });
-        postform.from_account_id = transfer.from_asset.id;
-        postform.to_account_id = transfer.to_asset.id;
         if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
             var resp = API.put('/transfers/:transfer_id', {
                 ':transfer_id': $stateParams.id
@@ -514,31 +472,25 @@ angular.module('starter.controllers', [])
 
     // asset select
     $scope.groups = MMAsset.getGroups();
-    $scope.saveOptions = ['No', 'Yes'];
 
     $scope.asset = {
-        is_save_account: 'No'
+        is_save_account: false
     };
 
     if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
         if (!Utils.isEmpty($stateParams.group_id)) {
-            angular.forEach($scope.groups, function(value, key) {
-                if (value.id == $stateParams.group_id) {
-                    $scope.asset.group = value;
-                    return;
-                }
-            });
+            $scope.asset.group_id = $stateParams.group_id;
         }
 
         $scope.asset.title = $stateParams.title;
         $scope.asset.amount = parseInt($stateParams.amount);
         $scope.asset.keep_amount = parseInt($stateParams.keep_amount);
         $scope.asset.description = $stateParams.description;
-        $scope.asset.is_save_account = $stateParams.is_save_account == 0 ? 'No' : 'Yes';
+        $scope.asset.is_save_account = $stateParams.is_save_account == 0 ? false : true;
     }
 
     $scope.submit = function(asset) {
-        if (Utils.isEmpty(asset.group)) {
+        if (Utils.isEmpty(asset.group_id)) {
             $ionicPopup.alert({
                 title: 'Group cannot be blank.'
             });
@@ -560,8 +512,7 @@ angular.module('starter.controllers', [])
         angular.forEach(asset, function(value, key) {
             postform[key] = value;
         });
-        postform.is_save_account = asset.is_save_account == 'No' ? 0 : 1;
-        postform.group_id = asset.group.id;
+        postform.is_save_account = asset.is_save_account == false ? 0 : 1;
         if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
             var resp = API.put('/assets/:asset_id', {
                 ':asset_id': $stateParams.id

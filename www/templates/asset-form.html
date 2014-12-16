@@ -2,27 +2,40 @@
   <ion-content>
     <form>
       <div class="list">
-        <label class="item item-input item-select">
+        <div class="item item-input item-select">
           <span class="input-label">Group</span>
-          <select ng-options="group.name for group in groups track by group.id" ng-model="asset.group" class="select-align-left">
-          </select>
-        </label>
+          <fancy-select
+            header-text="Group"
+            allow-empty="false"
+            value="asset.group_id"
+            text-default="Please choose Group"
+            text-field="name"
+            value-field="id"
+            ng-items="groups">
+          </fancy-select>
+        </div>
         <label class="item item-input">
           <span class="input-label">Title</span>
           <input ng-model="asset.title" type="text">
         </label>
-        <label class="item item-input">
+        <div class="item item-input">
           <span class="input-label">Amount</span>
           <input ng-model="asset.amount" type="number">
-        </label>
-        <label class="item item-input">
+          <fancy-calc value="asset.amount"></fancy-calc>
+        </div>
+        <div class="item item-input">
           <span class="input-label">Keep Amount</span>
           <input ng-model="asset.keep_amount" type="number">
-        </label>
-        <label class="item item-input item-select">
-          <span class="input-label">Is Save Account</span>
-          <select ng-options="option for option in saveOptions" ng-model="asset.is_save_account" class="select-align-left">
-          </select>
+          <fancy-calc value="asset.keep_amount"></fancy-calc>
+        </div>
+        <label class="item item-input item-toggle">
+          <span class="input-label">Save Account</span>
+          <label class="toggle">
+            <input type="checkbox" ng-model="asset.is_save_account">
+            <div class="track">
+              <div class="handle"></div>
+            </div>
+          </label>
         </label>
         <label class="item item-input">
           <span class="input-label">Description</span>

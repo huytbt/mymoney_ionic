@@ -2,38 +2,72 @@
   <ion-content>
     <form>
       <div class="list">
-        <label class="item item-input item-select">
+        <div class="item item-input item-select">
           <span class="input-label">Year</span>
-          <select ng-options="year for year in years track by year" ng-model="budget.year" class="select-align-left">
-          </select>
-        </label>
-        <label class="item item-input item-select">
+          <fancy-select
+            header-text="Year"
+            allow-empty="false"
+            value="budget.year"
+            text-default="Please choose Year"
+            text-field=""
+            value-field=""
+            ng-items="years">
+          </fancy-select>
+        </div>
+        <div class="item item-input item-select">
           <span class="input-label">Month</span>
-          <select ng-options="month for month in months track by month" ng-model="budget.month" class="select-align-left">
-          </select>
-        </label>
-        <label class="item item-input item-select">
+          <fancy-select
+            header-text="Month"
+            allow-empty="false"
+            value="budget.month"
+            text-default="Please choose Month"
+            text-field="name"
+            value-field="id"
+            ng-items="months">
+          </fancy-select>
+        </div>
+        <div class="item item-input item-select">
           <span class="input-label">Category</span>
-          <select ng-options="category.name group by category.type_name for category in categories track by category.id" ng-model="budget.category" class="select-align-left">
-          </select>
-        </label>
+          <fancy-select
+            header-text="Category"
+            allow-empty="false"
+            value="budget.category_id"
+            text-default="Please choose Category"
+            text-field="name"
+            value-field="id"
+            group-field="type_name"
+            ng-items="categories">
+          </fancy-select>
+        </div>
         <label class="item item-input">
           <span class="input-label">Title</span>
           <input ng-model="budget.title" type="text">
         </label>
-        <label class="item item-input">
+        <div class="item item-input">
           <span class="input-label">Amount</span>
           <input ng-model="budget.amount" type="number">
-        </label>
-        <label class="item item-input item-select">
+          <fancy-calc value="budget.amount"></fancy-calc>
+        </div>
+        <div class="item item-input item-select">
           <span class="input-label">Type</span>
-          <select ng-options="type for type in types" ng-model="budget.type" class="select-align-left">
-          </select>
-        </label>
-        <label class="item item-input item-select">
+          <fancy-select
+            header-text="Type"
+            allow-empty="false"
+            value="budget.type"
+            text-default="Please choose Type"
+            text-field="name"
+            value-field="id"
+            ng-items="types">
+          </fancy-select>
+        </div>
+        <label class="item item-input item-toggle">
           <span class="input-label">Tracking</span>
-          <select ng-options="tracking for tracking in trackings" ng-model="budget.tracking" class="select-align-left">
-          </select>
+          <label class="toggle">
+            <input type="checkbox" ng-model="budget.tracking">
+            <div class="track">
+              <div class="handle"></div>
+            </div>
+          </label>
         </label>
         <label class="item item-input">
           <span class="input-label">Description</span>

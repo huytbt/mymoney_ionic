@@ -1,0 +1,80 @@
+<ion-modal-view class="fancy-calc">
+  <ion-header-bar class="bar-positive nav-title-slide-ios7">
+    <button ng-click="hideCalc()" class="button button-positive button-icon ion-ios7-arrow-back"></button>
+    <h1 class="title">Calculator</h1>
+    <button ng-click="done()" class="button button-positive button-icon ion-checkmark"></button>
+  </ion-header-bar>
+  <ion-content>
+    <div class="list">
+      <div class="row">
+        <div class="col">
+          <input class="fancy-calc-result" type="text" ng-model="calcValue" disabled>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col col-50">
+          <button ng-click="btn('c')" class="button button-full button-assertive">C</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn('ce')" class="button button-full button-energized">CE</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn('/')" class="button button-full button-balanced">/</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <button ng-click="btn(7)" class="button button-full">7</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn(8)" class="button button-full">8</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn(9)" class="button button-full">9</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn('*')" class="button button-full button-balanced">x</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <button ng-click="btn(4)" class="button button-full">4</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn(5)" class="button button-full">5</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn(6)" class="button button-full">6</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn('-')" class="button button-full button-balanced">-</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <button ng-click="btn(1)" class="button button-full">1</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn(2)" class="button button-full">2</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn(3)" class="button button-full">3</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn('+')" class="button button-full button-balanced">+</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col col-50">
+          <button ng-click="btn(0)" class="button button-full">0</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn('1k')" class="button button-full">x1k</button>
+        </div>
+        <div class="col">
+          <button ng-click="btn('=')" class="button button-full button-positive">=</button>
+        </div>
+      </div>
+    </div>
+  </ion-content>
+</ion-modal-view>

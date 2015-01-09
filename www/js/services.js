@@ -1,62 +1,97 @@
 angular.module('starter.services', [])
 
-.constant('DATABASE_API_URL', 'http://api-autotest.toancauxanh.vn/sqliteapi')
-// .constant('DATABASE_API_URL', 'http://mymoneyapi.gopagoda.com')
-// .constant('DATABASE_API_URL', 'http://local.mymoney.com:8080/sqliteapi')
-
 /**
  * Model Budget View
  *
  * @author HuyTBT <huytbt@gmail.com>
  */
-.factory('MMViewBudget', function(Database, Cache, Utils, API) {
-  return {
-    getBudgetsByMonth: function(month, year) {
-      var cacheKey = 'getBudgetsByMonth'+year+month;
-      var cache = Cache.get(cacheKey);
-      if (!Utils.isEmpty(cache)) {
-        return cache;
-      }
+.factory('MMViewBudget', function(Cache, Utils, API, DB) {
+  var self = this;
+  self.getBudgetsByMonth = function(month, year, callback) {
+    var cacheKey = 'getBudgetsByMonth'+year+month;
+    var cache = Cache.get(cacheKey);
 
-      var uri = '/budgets/:month/:year';
-      var params = {
-        ':month': month,
-        ':year': year
-      };
-      var budgets = [];
-      var data = API.get(uri, params);
-      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
-        budgets = data.items;
-      }
-
+    DB.query('SELECT * FROM view_budget WHERE year=? AND month=? ORDER BY type', [year, month]).then(function(result) {
+      budgets = DB.fetchAll(result);
+      angular.forEach(budgets, function(budget, index) {
+        budgets[index].percentDayTracking = Math.round(budget.actual_amount / budget.amount * 100);
+        budgets[index].statusTracking = self.budgetGetStatusTracking(budget, month, year);
+      });
       Cache.put(cacheKey, budgets);
+      Cache.put('getBudgetsByMonth', budgets);
+      if (typeof callback == 'function') callback(budgets);
+    });
 
-      return budgets;
-    },
-    getBudgets: function(month, year, type) {
-      var cacheKey = 'getBudgets'+year+month+'type'+type;
-      var cache = Cache.get(cacheKey);
-      if (!Utils.isEmpty(cache)) {
-        return cache;
-      }
-
-      var uri = '/budgets/:month/:year/:type';
-      var params = {
-        ':month': month,
-        ':year': year,
-        ':type': type
-      };
-      var budgets = [];
-      var data = API.get(uri, params);
-      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
-        budgets = data.items;
-      }
-
-      Cache.put(cacheKey, budgets);
-
-      return budgets;
+    if (Utils.isEmpty(cache)) {
+      cache = Cache.get('getBudgetsByMonth');
     }
+
+    if (!Utils.isEmpty(cache)) {
+      return cache;
+    }
+
+    return [];
+  };
+  self.getBudgets = function(month, year, type, callback) {
+    var cacheKey = 'getBudgets'+year+month+'type'+type;
+    var cache = Cache.get(cacheKey);
+
+    DB.query('SELECT * FROM mm_budgets WHERE month=? AND year=? AND type=?', [month, year, type]).then(function(result) {
+      budgets = DB.fetchAll(result);
+      Cache.put(cacheKey, budgets);
+      if (typeof callback == 'function') callback(budgets);
+    });
+
+    if (!Utils.isEmpty(cache)) {
+      return cache;
+    }
+
+    return [];
+  };
+  self.budgetGetStatusTracking = function(budget, month, year) {
+    var currentYear = Utils.getCurrentYear();
+    var currentMonth = Utils.getCurrentMonth();
+    var percentDateOfMonth = 10;
+    var isCurrentMonth = Utils.getCurrentYear() == currentYear && Utils.getCurrentMonth() == currentMonth;
+    var percentDateOfMonth = Utils.getCurrentDay() / Utils.getTotalDaysOfMonth(year, month) * 100;
+    if (budget.type == 0) {
+      percentSafe = 100;
+      percentWarning = 95;
+      if (budget.day_tracking == 1 && isCurrentMonth) {
+        percentSafe = percentDateOfMonth;
+        percentWarning = percentDateOfMonth;
+      }
+      return budget.percentDayTracking>=percentSafe?0:(budget.percentDayTracking<percentWarning?10:5);
+    } else {
+      percentSafe = 90;
+      percentWarning = 100;
+      if (budget.day_tracking == 1 && isCurrentMonth) {
+        percentSafe = percentDateOfMonth - 10;
+        percentWarning = percentDateOfMonth;
+      }
+      return budget.percentDayTracking<percentSafe?0:(budget.percentDayTracking>percentWarning?10:5);
+    }
+    return budget.percentDayTracking;
   }
+
+  self.budgetsGetTotalAmount = function(attributes, field, type, callback) {
+    if (Utils.isEmpty(type)) type = 1;
+    select = 'SELECT SUM('+field+') as total ';
+    from = 'FROM view_budget ';
+    where = 'WHERE type=? ';
+    params = [type];
+    angular.forEach(attributes, function(value, attr) {
+      where += 'AND ' + attr + '=? ';
+      params[params.length] = value;
+    });
+    DB.query(select + from + where, params).then(function(result) {
+      total = DB.fetch(result);
+      total = total.total || 0;
+      if (typeof callback == 'function') callback(total);
+    });
+  }
+
+  return self;
 })
 
 
@@ -65,77 +100,91 @@ angular.module('starter.services', [])
  *
  * @author HuyTBT <huytbt@gmail.com>
  */
-.factory('MMAsset', function(Cache, Database, Utils, API) {
-  return {
-    getAssets: function(more) {
-      var cacheKey = 'assets';
-      if (!Utils.isEmpty(more)) {
-        cacheKey += more;
-      }
-      var cache = Cache.get(cacheKey);
-      if (!Utils.isEmpty(cache)) {
-        return cache;
-      }
-
-      var uri = '/assets';
-      if (!Utils.isEmpty(more)) {
-        uri += more;
-      }
-      var assets = [];
-      var data = API.get(uri);
-      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
-        assets = data.items;
-      }
-
-      Cache.put(cacheKey, assets);
-
-      return assets;
-    },
-    getGroups: function() {
-      var cacheKey = 'asset-groups';
-      var cache = Cache.get(cacheKey);
-      if (!Utils.isEmpty(cache)) {
-        return cache;
-      }
-
-      var uri = '/asset-groups';
-      var groups = [];
-      var data = API.get(uri);
-      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
-        groups = data.items;
-      }
-
-      Cache.put(cacheKey, groups);
-
-      return groups;
+.factory('MMAsset', function(Cache, Utils, API, DB) {
+  var self = this;
+  self.getAssets = function(more, callback) {
+    var cacheKey = 'assets';
+    if (!Utils.isEmpty(more)) {
+      cacheKey += more;
     }
+    var cache = Cache.get(cacheKey);
+
+    select = 'SELECT t.*, ag.name as group_name ';
+    from = 'FROM mm_assets as t INNER JOIN mm_asset_groups as ag ON t.group_id = ag.id ';
+    if (!Utils.isEmpty(more) && more == '?more=amount_current') {
+        select += ', va.amount_current as amount_current ';
+        from += 'INNER JOIN view_assets as va ON va.asset_id = t.id ';
+    }
+    DB.query(select + from).then(function(result) {
+      assets = DB.fetchAll(result);
+      Cache.put(cacheKey, assets);
+      if (typeof callback == 'function') callback(assets);
+    });
+
+    if (!Utils.isEmpty(cache)) {
+      return cache;
+    }
+
+    return [];
+  };
+  self.getGroups = function(callback) {
+    var cacheKey = 'asset-groups';
+    var cache = Cache.get(cacheKey);
+
+    DB.query('SELECT t.* FROM mm_asset_groups as t').then(function (result) {
+      groups = DB.fetchAll(result);
+      Cache.put(cacheKey, groups);
+      if (typeof callback == 'function') callback(groups);
+    });
+
+    if (!Utils.isEmpty(cache)) {
+      return cache;
+    }
+
+    return [];
   }
+  self.assetsGetTotalAmount = function(attributes, field, callback) {
+    select = 'SELECT SUM('+field+') as total ';
+    from = 'FROM view_assets ';
+    where = 'WHERE 1=1 ';
+    params = [];
+    angular.forEach(attributes, function(value, attr) {
+      where += 'AND ' + attr + '=? ';
+      params[params.length] = value;
+    });
+    DB.query(select + from + where, params).then(function(result) {
+      total = DB.fetch(result);
+      total = total.total || 0;
+      if (typeof callback == 'function') callback(total);
+    });
+  }
+  return self;
 })
 
 
-.factory('MMAssetTransfer', function(Cache, Database, Utils, API) {
+.factory('MMAssetTransfer', function(Cache, Utils, API, DB) {
   return {
-    getTransfersByMonth: function(month, year) {
+    getTransfersByMonth: function(month, year, callback) {
       var cacheKey = 'getTransfersByMonth'+year+month;
       var cache = Cache.get(cacheKey);
+
+      query = 'SELECT t.*, assetF.title as from_account_text, assetT.title as to_account_text ';
+      query+= 'FROM mm_asset_transfers as t ';
+      query+= 'INNER JOIN mm_assets as assetF ON assetF.id=t.from_account_id ';
+      query+= 'INNER JOIN mm_assets as assetT ON assetT.id=t.to_account_id ';
+      query+= 'WHERE t.year=? AND t.month=?';
+      params = [year, month];
+      DB.query(query, params).then(function(result) {
+        transfers = DB.fetchAll(result);
+        Cache.put(cacheKey, transfers);
+        if (typeof callback == 'function') callback(transfers);
+      });
+
       if (!Utils.isEmpty(cache)) {
         return cache;
       }
 
-      var uri = '/transfers/:month/:year';
-      var params = {
-        ':month': month,
-        ':year': year
-      };
-      var transfers = [];
-      var data = API.get(uri, params);
-      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
-        transfers = data.items;
-      }
-
-      Cache.put(cacheKey, transfers);
-
-      return transfers;
+      return [];
     }
   }
 })
@@ -146,27 +195,140 @@ angular.module('starter.services', [])
  *
  * @author HuyTBT <huytbt@gmail.com>
  */
-.factory('MMCategory', function(Cache, Database, Utils, API) {
+.factory('MMCategory', function(Cache, Utils, API, DB) {
   return {
-    getCategories: function() {
+    getCategories: function(callback) {
       var cacheKey = 'categories';
       var cache = Cache.get(cacheKey);
+
+      DB.query('SELECT * from mm_categories').then(function(result) {
+        categories = DB.fetchAll(result);
+        angular.forEach(categories, function(cat, key) {
+          categories[key].type_name = cat.type == 0 ? 'Income' : 'Expense';
+        })
+        Cache.put(cacheKey, categories);
+        if (typeof callback == 'function') callback(categories);
+      });
+
       if (!Utils.isEmpty(cache)) {
         return cache;
       }
 
-      var uri = '/categories';
-      var assets = [];
-      var data = API.get(uri);
-      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
-        assets = data.items;
-      }
-
-      Cache.put(cacheKey, assets);
-
-      return assets;
+      return [];
     }
   }
+})
+
+
+/**
+ * MMBackup Model
+ *
+ * @author HuyTBT <huytbt@gmail.com>
+ */
+.factory('MMBackup', function(Cache, Utils, API, DB) {
+  var self = this;
+  self.getTotalRecords = function(callback) {
+    var total = 0;
+    DB.query('SELECT count(*) as total FROM mm_asset_groups').then(function(result) {
+      rs = DB.fetch(result);
+      total += rs.total;
+      DB.query('SELECT count(*) as total FROM mm_assets').then(function(result) {
+        rs = DB.fetch(result);
+        total += rs.total;
+        DB.query('SELECT count(*) as total FROM mm_asset_transfers').then(function(result) {
+          rs = DB.fetch(result);
+          total += rs.total;
+          DB.query('SELECT count(*) as total FROM mm_categories').then(function(result) {
+            rs = DB.fetch(result);
+            total += rs.total;
+            DB.query('SELECT count(*) as total FROM mm_budgets').then(function(result) {
+              rs = DB.fetch(result);
+              total += rs.total;
+              DB.query('SELECT count(*) as total FROM mm_bills').then(function(result) {
+                rs = DB.fetch(result);
+                total += rs.total;
+                if (typeof callback == 'function') callback(total);
+              });
+            });
+          });
+        });
+      });
+    });
+  }
+  self.getBackups = function() {
+    var uri = '/backups';
+    var backups = [];
+    var data = API.get(uri);
+    if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
+      backups = data.items;
+      backups = backups.sort(function (a, b) {
+        return (a.modified < b.modified);
+      });
+    }
+    return backups;
+  };
+  self.restore = function(filename, tablename, page) {
+    var queries = [];
+    if (Utils.isEmpty(page)) page = 1;
+    var data = API.get('/backups/:filename/:tablename?page=:page', {':filename':filename, ':tablename':tablename, ':page':page});
+    if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
+      if (page == 1) {
+        queries[queries.length] = "DELETE FROM "+tablename+"";
+      }
+      angular.forEach(data.items, function(row) {
+        fields = []; values = [];
+        angular.forEach(row, function(value, field) {
+          fields[fields.length] = field;
+          value = value || '';
+          value = value.toString().replace(/'/g, "\'\'");
+          values[values.length] = "'"+value+"'";
+        });
+        queries[queries.length] = "INSERT INTO "+tablename+" ("+fields.join(',')+") VALUES ("+values.join(',')+")";
+      });
+      if (data.pages.currentPage < data.pages.totalPages) {
+        queries = queries.concat(self.restore(filename, tablename, page + 1));
+      }
+      return queries;
+    }
+    return false;
+  };
+  self.newBackup = function(filename) {
+    API.post('/backups/:filename', {':filename':filename}, {});
+  };
+  self.backup = function(filename, tablename, callback) {
+    var limit = 100; var offset = 0;
+    DB.query('SELECT count(*) as total FROM ' + tablename + '').then(function(result){
+      rs = DB.fetch(result);
+      var total = rs.total;
+      var totalPages = Math.ceil(total / limit);
+      for (page = 1; page <= totalPages; page++) {
+        offset = (page - 1) * limit;
+        DB.query('SELECT * FROM ' + tablename + ' LIMIT ' + offset + ',' + limit).then(function(result){
+          var data = angular.toJson(DB.fetchAll(result));
+          API.post('/backups/:filename/:tablename', {':filename':filename, ':tablename':tablename}, {data: data});
+        });
+      }
+      if (typeof callback == 'function') {
+        if (typeof callback == 'function') callback();
+      }
+    });
+  };
+  self.resetDb = function() {
+    var queries = [
+      'DROP TABLE mm_bills',
+      'DROP TABLE mm_budgets',
+      'DROP TABLE mm_categories',
+      'DROP TABLE mm_asset_transfers',
+      'DROP TABLE mm_assets',
+      'DROP TABLE mm_asset_groups',
+      'DROP VIEW view_assets',
+      'DROP VIEW view_budget',
+      'DELETE FROM sqlite_sequence'
+    ];
+    DB.executeMultipleQueries(queries);
+    DB.init();
+  }
+  return self;
 })
 
 
@@ -175,38 +337,87 @@ angular.module('starter.services', [])
  *
  * @author HuyTBT <huytbt@gmail.com>
  */
-.factory('MMBill', function(Cache, Database, Utils, API) {
+.factory('MMBill', function(Cache, Utils, API, DB) {
   return {
-    getBillsByMonth: function(month, year, budget_id) {
+    getBillsByMonth: function(month, year, budget_id, callback) {
       var cacheKey = 'getBillsByMonth'+year+month;
       if (!Utils.isEmpty(budget_id)) {
         cacheKey += budget_id.toString();
       }
       var cache = Cache.get(cacheKey);
+
+      var arrBills = [];
+
+      // get days has bill of month
+      select = 'SELECT day ';
+      from = 'FROM mm_bills t ';
+      where = 'WHERE t.month=? AND t.year=? ';
+      params = [month, year];
+      if (!Utils.isEmpty(budget_id)) {
+          where += 'AND t.budget_id=? ';
+          params[params.length] = budget_id;
+      }
+      order = 'ORDER BY t.day DESC ';
+      group = 'GROUP BY t.day ';
+      DB.query(select + from + where + group + order, params).then(function(result) {
+        daysHasBills = DB.fetchAll(result);
+
+        // get bills each day
+        select = 'SELECT t.*, bud.title as budget_title, cat.name as budget_category_name ';
+        from += 'INNER JOIN mm_budgets bud ON t.budget_id=bud.id ';
+        from += 'INNER JOIN mm_categories cat ON bud.category_id=cat.id ';
+        angular.forEach(daysHasBills, function(bill, key) {
+          from = 'FROM mm_bills t ';
+          from += 'INNER JOIN mm_budgets bud ON t.budget_id=bud.id ';
+          from += 'INNER JOIN mm_categories cat ON bud.category_id=cat.id ';
+          where = 'WHERE t.month=? AND t.year=? ';
+          params = [month, year];
+          if (!Utils.isEmpty(budget_id)) {
+              where += 'AND t.budget_id=? ';
+              params[params.length] = budget_id;
+          }
+          where += 'AND t.day=? ';
+          params2 = [];
+          for (i=0;i<params.length;i++) params2[i] = params[i];
+          params2[params2.length] = bill.day;
+
+          DB.query(select + from + where, params2).then(function(result) {
+            bills = DB.fetchAll(result);
+            totalParams = {day: bill.day, month: month, year: year};
+            if (!Utils.isEmpty(budget_id)) {
+                totalParams.budget_id = budget_id;
+            }
+            arrBills[arrBills.length] = {
+              day: bill.day,
+              year_month: '',
+              bills: bills,
+              totalExpenseAmount: 0,
+              totalIncomeAmount: 0
+            };
+
+            if (key == daysHasBills.length - 1) {
+              Cache.put(cacheKey, arrBills);
+              Cache.put('getBillsByMonth', arrBills);
+              callback(arrBills);
+            }
+          });
+        });
+        if (daysHasBills.length == 0) {
+          Cache.put(cacheKey, []);
+          Cache.put('getBillsByMonth', []);
+          callback([]);
+        }
+      });
+
+      if (Utils.isEmpty(cache)) {
+        cache = Cache.get('getBillsByMonth');
+      }
+
       if (!Utils.isEmpty(cache)) {
         return cache;
       }
 
-      var arrBills;
-
-      var uri = '/bills/:month/:year';
-      var params = {};
-      params[':month'] = month;
-      params[':year'] = year;
-      if (!Utils.isEmpty(budget_id)) {
-        uri += '/:budget_id';
-        params[':budget_id'] = budget_id;
-      }
-
-      arrBills = [];
-      var data = API.get(uri, params);
-      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.items)) {
-        arrBills = data.items;
-      }
-
-      Cache.put(cacheKey, arrBills);
-
-      return arrBills;
+      return [];
     }
   }
 })
@@ -216,29 +427,59 @@ angular.module('starter.services', [])
  *
  * @author HuyTBT <huytbt@gmail.com>
  */
-.factory('MMCommon', function(Database, Cache, Utils, API) {
+.factory('MMCommon', function(Cache, Utils, API, DB, MMViewBudget, MMAsset) {
   return {
-    getStatistics: function(month, year) {
+    getStatistics: function(month, year, callback) {
       var cacheKey = 'getStatistics'+year+month;
       var cache = Cache.get(cacheKey);
+
+      MMAsset.assetsGetTotalAmount({is_save_account: 0}, 'amount_current', function(assetCurrentAmount) {
+        MMAsset.assetsGetTotalAmount({is_save_account: 0}, 'keep_amount', function(assetKeepAmount) {
+          var totalAssets = assetCurrentAmount - assetKeepAmount;
+
+          var params = {month: month, year: year};
+          MMViewBudget.budgetsGetTotalAmount(params, 'amount', 0, function(totalIncomePlanAmount) {
+            MMViewBudget.budgetsGetTotalAmount(params, 'actual_amount', 0, function(totalIncomeActualAmount) {
+              MMViewBudget.budgetsGetTotalAmount(params, 'amount', 1, function(totalExpensePlanAmount) {
+                MMViewBudget.budgetsGetTotalAmount(params, 'actual_amount', 1, function(totalExpenseActualAmount) {
+                  MMViewBudget.budgetsGetTotalAmount(params, 'need_income_amount', 1, function(totalNeedIncomeAmount) {
+                    totalNeedIncomeActualAmount = Math.max(0, totalNeedIncomeAmount - totalAssets);
+                    statistics = {
+                      totalIncomePlanAmount: totalIncomePlanAmount,
+                      totalIncomeActualAmount: totalIncomeActualAmount,
+                      totalExpensePlanAmount: totalExpensePlanAmount,
+                      totalExpenseActualAmount: totalExpenseActualAmount,
+                      totalNeedIncomeAmount: totalNeedIncomeAmount,
+                      totalNeedIncomeActualAmount: totalNeedIncomeActualAmount
+                    };
+
+                    Cache.put(cacheKey, statistics);
+                    Cache.put('getStatistics', statistics);
+                    if (typeof callback == 'function') callback(statistics);
+                  });
+                });
+              });
+            });
+          });
+        })
+      });
+
+      if (Utils.isEmpty(cache)) {
+        cache = Cache.get('getStatistics');
+      }
+
       if (!Utils.isEmpty(cache)) {
         return cache;
       }
 
-      var uri = '/statistics/:month/:year';
-      var params = {
-        ':month': month,
-        ':year': year
+      return {
+        totalIncomePlanAmount: 0,
+        totalIncomeActualAmount: 0,
+        totalExpensePlanAmount: 0,
+        totalExpenseActualAmount: 0,
+        totalNeedIncomeAmount: 0,
+        totalNeedIncomeActualAmount: 0
       };
-      var statistics = [];
-      var data = API.get(uri, params);
-      if (!Utils.isEmpty(data) && !Utils.isEmpty(data.stats)) {
-        statistics = data.stats;
-      }
-
-      Cache.put(cacheKey, statistics);
-
-      return statistics;
     }
   }
 })
@@ -269,6 +510,9 @@ angular.module('starter.services', [])
     },
     getCurrentYear: function() {
       return parseInt($filter('date')(new Date, 'yyyy'));
+    },
+    getTimestamp: function () {
+      return Date.now() / 1000 | 0;
     },
     getTotalDaysOfMonth: function(year, month) {
       return (new Date(year, month, 0)).getDate();
@@ -406,7 +650,17 @@ angular.module('starter.services', [])
       }
 
       // send request
-      request.send(null);
+      try {
+        // send request
+        request.send(null);
+      } catch (e) {
+        return {
+          meta: {
+            code: 500,
+            message: 'Cannot connect to server.'
+          }
+        };
+      }
 
       // receiver response
       if (request.status === 200) {
@@ -449,8 +703,17 @@ angular.module('starter.services', [])
         });
       }
 
-      // send request
-      request.send(strData);
+      try {
+        // send request
+        request.send(strData);
+      } catch (e) {
+        return {
+          meta: {
+            code: 500,
+            message: 'Cannot connect to server.'
+          }
+        };
+      }
 
       // receiver response
       data = [];
@@ -476,97 +739,149 @@ angular.module('starter.services', [])
   }
 })
 
-/**
- * Database component
- *
- * @author HuyTBT <huytbt@gmail.com>
- */
-.factory('Database', function($http, CookieComponent, DATABASE_API_URL, Utils) {
-  return {
-    query: function(q, params, asynchronous) {
-      var items = [];
-      var request = new XMLHttpRequest();
+// DB wrapper
+.factory('DB', function($q, DB_CONFIG, Utils) {
+  var self = this;
+  self.db = null;
 
-      if (Utils.isEmpty(asynchronous)) {
-        asynchronous = false;
-      }
+  self.init = function() {
+      // self.db = window.sqlitePlugin.openDatabase({name: DB_CONFIG.name}); // Use in production
+      self.db = window.openDatabase(DB_CONFIG.name, '1.0', 'database', 2 * 1024 * 1024);
 
-      // binding parameters
-      if (!Utils.isEmpty(params)) {
-        angular.forEach(params, function(value, key) {
-          value = value.toString().replace(/'/g, "\\'");
-          q = q.replace(key, "'" + value + "'");
-        });
-      }
+      angular.forEach(DB_CONFIG.tables, function(table) {
+          var columns = [];
 
-      // open request
-      request.open('GET', DATABASE_API_URL + '/query?query=' + encodeURIComponent(q), asynchronous);  // `false` makes the request synchronous
+          angular.forEach(table.columns, function(column) {
+              columns.push(column.name + ' ' + column.type);
+          });
 
-      // send request headers
-      if (!Utils.isEmpty(CookieComponent.get('auth'))) {
-        angular.forEach(CookieComponent.get('auth'), function(value, key) {
-          if (!Utils.isEmpty(value)) {
-            request.setRequestHeader(key, value);
-          }
-        });
-      }
+          var query = 'CREATE TABLE IF NOT EXISTS ' + table.name + ' (' + columns.join(',') + ')';
+          self.query(query);
+      });
 
-      // send request
-      request.send(null);
-
-      // receiver response
-      if (request.status === 200) {
-        resp = angular.fromJson(request.responseText);
-        if (resp.meta.code == 200) {
-          items = resp.data.items;
-        }
-      }
-
-      return items;
-    },
-    exec: function(q, params) {
-      var result = false;
-      var request = new XMLHttpRequest();
-
-      // binding parameters
-      if (!Utils.isEmpty(params)) {
-        angular.forEach(params, function(value, key) {
-          value = value.replace(/'/g, "\\'");
-          q = q.replace(key, "'" + value + "'");
-        });
-      }
-
-      // open request
-      request.open('POST', DATABASE_API_URL + '/exec', false);  // `false` makes the request synchronous
-
-      var strParams = 'query='+encodeURIComponent(q);
-
-      // send request headers
-      request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-      request.setRequestHeader("Content-length", strParams.length);
-      request.setRequestHeader("Connection", "close");
-      if (!Utils.isEmpty(CookieComponent.get('auth'))) {
-        angular.forEach(CookieComponent.get('auth'), function(value, key) {
-          if (!Utils.isEmpty(value)) {
-            request.setRequestHeader(key, value);
-          }
-        });
-      }
-
-      // send request
-      request.send(strParams);
-
-      // receiver response
-      if (request.status === 200) {
-        resp = angular.fromJson(request.responseText);
-        if (resp.meta.code == 200) {
-          result = resp.data.result;
-        }
-      }
-
-      return result;
-    }
+      angular.forEach(DB_CONFIG.views, function(view) {
+          var query = 'CREATE VIEW IF NOT EXISTS ' + view.name + ' AS ' + view.query + '';
+          self.query(query);
+      });
   };
+
+  self.query = function(query, bindings) {
+      bindings = typeof bindings !== 'undefined' ? bindings : [];
+      var deferred = $q.defer();
+
+      self.db.transaction(function(transaction) {
+          transaction.executeSql(query, bindings, function(transaction, result) {
+            deferred.resolve(result);
+          }, function(transaction, error) {
+            deferred.reject(error);
+            // console.log(error);
+          });
+      });
+
+      return deferred.promise;
+  };
+
+  self.executeMultipleQueries = function(queries, bindings) {
+      bindings = typeof bindings !== 'undefined' ? bindings : [];
+
+      self.db.transaction(function(transaction) {
+        angular.forEach(queries, function(query) {
+          transaction.executeSql(query, bindings, function(transaction, result) {
+          }, function(transaction, error) {
+            // console.log(error);
+            // console.log(query);
+          });
+        });
+      });
+
+      return true;
+  };
+
+  self.fetchAll = function(result) {
+      var output = [];
+
+      for (var i = 0; i < result.rows.length; i++) {
+          output.push(result.rows.item(i));
+      }
+      
+      return output;
+  };
+
+  self.fetch = function(result) {
+      return result.rows.item(0);
+  };
+
+  self.insert = function (tablename, data, condition, callback, errback) {
+    var query = 'INSERT INTO ' + tablename;
+    var sets = [];
+    var setValues = [];
+    var params = [];
+    var conds = [];
+    data.created = Utils.getTimestamp();
+    angular.forEach(data, function (value, key) {
+      sets[sets.length] = key;
+      setValues[setValues.length] = '?';
+      params[params.length] = value;
+    });
+    angular.forEach(condition, function (value, key) {
+      conds[conds.length] = key + '=?';
+      params[params.length] = value;
+    });
+    query += ' ( ' + sets.join(', ') + ') VALUES ( ' + setValues.join(', ') + ' )';
+    if (conds.length) {
+      query += ' WHERE ' + conds.join(' AND ');
+    }
+    self.query(query, params).then(function(result) {
+      if (typeof callback == 'function') callback(result);
+    }, function(error) {
+      if (typeof errback == 'function') errback(error);
+    });
+  }
+
+  self.update = function (tablename, data, condition, callback, errback) {
+    var query = 'UPDATE ' + tablename;
+    var sets = [];
+    var params = [];
+    var conds = [];
+    data.modified = Utils.getTimestamp();
+    angular.forEach(data, function (value, key) {
+      sets[sets.length] = key + '=?';
+      params[params.length] = value;
+    });
+    angular.forEach(condition, function (value, key) {
+      conds[conds.length] = key + '=?';
+      params[params.length] = value;
+    });
+    query += ' SET ' + sets.join(', ');
+    if (conds.length) {
+      query += ' WHERE ' + conds.join(' AND ');
+    }
+    self.query(query, params).then(function(result) {
+      if (typeof callback == 'function') callback(result);
+    }, function(error) {
+      if (typeof errback == 'function') errback(error);
+    });
+  }
+
+  self.delete = function (tablename, condition, callback, errback) {
+    var query = 'DELETE FROM ' + tablename;
+    var params = [];
+    var conds = [];
+    angular.forEach(condition, function (value, key) {
+      conds[conds.length] = key + '=?';
+      params[params.length] = value;
+    });
+    if (conds.length) {
+      query += ' WHERE ' + conds.join(' AND ');
+    }
+    self.query(query, params).then(function(result) {
+      if (typeof callback == 'function') callback(result);
+    }, function(error) {
+      if (typeof errback == 'function') errback(error);
+    });
+  }
+
+  return self;
 })
 
 ;

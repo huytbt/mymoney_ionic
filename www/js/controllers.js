@@ -1,8 +1,6 @@
 angular.module('starter.controllers', [])
 
-.controller('BudgetCtrl', function($scope, $stateParams, $location, $state, $ionicPopup, MMViewBudget, MMCommon, Cache, Auth, Utils, API) {
-    Auth.requireLogin();
-
+.controller('BudgetCtrl', function($scope, $stateParams, $location, $state, $ionicPopup, MMViewBudget, MMCommon, Cache, Auth, Utils, API, DB) {
     var year = $stateParams.year;
     var month = $stateParams.month;
     if (Utils.isEmpty(year)) {
@@ -15,15 +13,30 @@ angular.module('starter.controllers', [])
         year: year,
         month: month
     };
-    $scope.budgets = MMViewBudget.getBudgetsByMonth(month, year);
-    $scope.statistics = MMCommon.getStatistics(month, year);
+    $scope.budgets = MMViewBudget.getBudgetsByMonth(month, year, function(budgets) {
+        $scope.budgets = budgets;
+    });
+    $scope.statistics = MMCommon.getStatistics(month, year, function(statistics) {
+        $scope.statistics = statistics;
+    });
 
     $scope.goBills = function(budget) {
         $location.path('/tab/bills').search({year:year, month:month, budget_id: budget.budget_id});
     }
     $scope.editBudget = function(budget) {
         budget.edit = 1;
-        $location.path('/tab/budget/form').search(budget);
+        $location.path('/tab/budget/form').search({
+            year: budget.year,
+            month: budget.month,
+            budget_id: budget.budget_id,
+            category_id: budget.category_id,
+            title: budget.title ? budget.title : '',
+            amount: budget.amount,
+            type: budget.type,
+            day_tracking: budget.day_tracking,
+            description: budget.description ? budget.description : '',
+            edit: 1
+        });
     }
     $scope.deleteBudget = function(budget) {
         var confirmPopup = $ionicPopup.confirm({
@@ -31,24 +44,21 @@ angular.module('starter.controllers', [])
         });
         confirmPopup.then(function(res) {
             if (res) {
-                var resp = API.delete('/budgets/:budget_id', {
-                    ':budget_id': budget.budget_id
-                }, {});
-                if (resp.meta.code != 200) {
+                // var resp = API.delete('/budgets/:budget_id', {
+                //     ':budget_id': budget.budget_id
+                // }, {});
+                DB.delete('mm_budgets', {id: budget.budget_id}, function (result) {
+                    $state.go($state.current, {}, {reload: true});
+                }, function (error) {
                     $ionicPopup.alert({
-                        title: resp.meta.message
+                        title: 'Cannot delete.'
                     });
-                    return;
-                }
-                Cache.removeAll();
-                $state.go($state.current, {}, {reload: true});
+                });
             }
         });
     }
 })
-.controller('BudgetFormCtrl', function($scope, $stateParams, $location, $ionicViewService, $ionicPopup, MMCategory, MMAsset, Utils, API, Cache, Auth) {
-    Auth.requireLogin();
-
+.controller('BudgetFormCtrl', function($scope, $stateParams, $location, $ionicViewService, $ionicPopup, MMCategory, MMAsset, Utils, API, Cache, Auth, DB) {
     var year = parseInt($stateParams.year);
     var month = parseInt($stateParams.month);
     if (Utils.isEmpty(year)) {
@@ -70,7 +80,9 @@ angular.module('starter.controllers', [])
     
     $scope.types = ['Income', 'Expense'];
     $scope.trackings = ['None', 'Day by day'];
-    $scope.categories = MMCategory.getCategories();
+    $scope.categories = MMCategory.getCategories(function(categories) {
+        $scope.categories = categories;
+    });
 
     $scope.budget = {
         year: year,
@@ -110,41 +122,44 @@ angular.module('starter.controllers', [])
             return;
         }
 
+        var callback = function (result) {
+            $ionicViewService.nextViewOptions({
+                disableAnimate: true,
+                disableBack: true
+            });
+            $location.path('/tab/budget').search({
+                year: year,
+                month: month
+            });
+        };
+        var errback = function (error) {
+            console.log(error);
+            $ionicPopup.alert({
+                title: 'Cannot execute.'
+            });
+        };
+
         var postform = {};
         angular.forEach(budget, function(value, key) {
             postform[key] = value;
         });
-        postform.tracking = budget.tracking == false ? 0 : 1;
+        postform.day_tracking = budget.tracking == false ? 0 : 1;
+        postform.description = budget.description | "";
+        delete(postform.tracking);
         postform.type = budget.type == 'Income' ? 0 : 1;
         if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
-            var resp = API.put('/budgets/:budget_id', {
-                ':budget_id': $stateParams.budget_id
-            }, postform);
+            DB.update('mm_budgets', postform, {id: $stateParams.budget_id}, callback, errback);
+            // var resp = API.put('/budgets/:budget_id', {
+            //     ':budget_id': $stateParams.budget_id
+            // }, postform);
         } else {
-            var resp = API.post('/budgets', {}, postform);
+            DB.insert('mm_budgets', postform, {}, callback, errback);
+            // var resp = API.post('/budgets', {}, postform);
         }
-        if (resp.meta.code != 200) {
-            $ionicPopup.alert({
-                title: resp.meta.message
-            });
-            return;
-        }
-        Cache.removeAll();
-
-        $ionicViewService.nextViewOptions({
-          disableAnimate: true,
-          disableBack: true
-        });
-        $location.path('/tab/budget').search({
-            year: year,
-            month: month
-        });
     }
 })
 
-.controller('BillsCtrl', function($scope, $stateParams, $location, $state, $ionicPopup, MMBill, MMCommon, Auth, API, Utils, Cache) {
-    Auth.requireLogin();
-
+.controller('BillsCtrl', function($scope, $stateParams, $location, $state, $ionicPopup, MMBill, MMCommon, Auth, API, Utils, Cache, DB) {
     var year = $stateParams.year;
     var month = $stateParams.month;
     var budget_id = $stateParams.budget_id;
@@ -159,12 +174,27 @@ angular.module('starter.controllers', [])
         month: month,
         budget_id: budget_id
     };
-    $scope.bills = MMBill.getBillsByMonth(month, year, budget_id);
-    $scope.statistics = MMCommon.getStatistics(month, year);
+    $scope.bills = MMBill.getBillsByMonth(month, year, budget_id, function(bills) {
+        $scope.bills = bills;
+    });
+    $scope.statistics = MMCommon.getStatistics(month, year, function(statistics) {
+        $scope.statistics = statistics;
+    });
 
     $scope.editBill = function(bill) {
-        bill.edit = 1;
-        $location.path('/tab/bills/form').search(bill);
+        $location.path('/tab/bills/form').search({
+            id: bill.id,
+            type: bill.type,
+            year: bill.year,
+            month: bill.month,
+            day: bill.day,
+            title: bill.title ? bill.title : '',
+            amount: bill.amount,
+            description: bill.description ? bill.description : '',
+            asset_id: bill.asset_id,
+            budget_id: bill.budget_id,
+            edit: 1
+        });
     }
     $scope.deleteBill = function(bill) {
         var confirmPopup = $ionicPopup.confirm({
@@ -172,24 +202,21 @@ angular.module('starter.controllers', [])
         });
         confirmPopup.then(function(res) {
             if (res) {
-                var resp = API.delete('/bills/:bill_id', {
-                    ':bill_id': bill.id
-                }, {});
-                if (resp.meta.code != 200) {
+                DB.delete('mm_bills', {id: bill.id}, function (result) {
+                    $state.go($state.current, {}, {reload: true});
+                }, function (error) {
                     $ionicPopup.alert({
-                        title: resp.meta.message
+                        title: 'Cannot delete.'
                     });
-                    return;
-                }
-                Cache.removeAll();
-                $state.go($state.current, {}, {reload: true});
+                });
+                // var resp = API.delete('/bills/:bill_id', {
+                //     ':bill_id': bill.id
+                // }, {});
             }
         });
     }
 })
-.controller('BillFormCtrl', function($scope, $stateParams, $location, $ionicViewService, $ionicPopup, MMViewBudget, MMAsset, Utils, API, Cache, Auth) {
-    Auth.requireLogin();
-
+.controller('BillFormCtrl', function($scope, $stateParams, $location, $ionicViewService, $ionicPopup, MMViewBudget, MMAsset, Utils, API, Cache, Auth, DB) {
     var year = $stateParams.year;
     var month = $stateParams.month;
     var day = $stateParams.day;
@@ -215,15 +242,25 @@ angular.module('starter.controllers', [])
     $scope.type = type;
 
     // budget select
-    $scope.budgets = MMViewBudget.getBudgets(month, year, type);
+    $scope.budgets = MMViewBudget.getBudgets(month, year, type, function(budgets) {
+        $scope.budgets = budgets;
+    });
 
     // asset select
-    $scope.assets = MMAsset.getAssets();
+    $scope.assets = MMAsset.getAssets('', function(assets) {
+        $scope.assets = assets;
+        if ($scope.assets.length && Utils.isEmpty($scope.bill.asset_id)) {
+            $scope.bill.asset_id = $scope.assets[0].id;
+        }
+    });
 
     $scope.bill = {
-        day: year + '-' + Utils.numPad(month, 2) + '-' + Utils.numPad(day, 2),
-        asset_id: $scope.assets[0].id,
+        day: year + '-' + Utils.numPad(month, 2) + '-' + Utils.numPad(day, 2)
     };
+
+    if ($scope.assets.length && Utils.isEmpty($scope.bill.asset_id)) {
+        $scope.bill.asset_id = $scope.assets[0].id;
+    }
 
     if (!Utils.isEmpty($stateParams.budget_id)) {
         $scope.bill.budget_id = $stateParams.budget_id;
@@ -239,6 +276,20 @@ angular.module('starter.controllers', [])
         $scope.bill.title = $stateParams.title;
         $scope.bill.amount = parseInt($stateParams.amount);
         $scope.bill.description = $stateParams.description;
+    }
+
+    $scope.changeDay = function(bill) {
+        var arrDate = bill.day.split('-');
+        if (parseInt(arrDate[0]) == parseInt(year) && parseInt(arrDate[1]) == parseInt(month)) {
+            return;
+        }
+        year = parseInt(arrDate[0]);
+        month = parseInt(arrDate[1]);
+        // budget select
+        $scope.budgets = MMViewBudget.getBudgets(month, year, type, function(budgets) {
+            $scope.budgets = budgets;
+        });
+        // console.log(bill.day);
     }
 
     $scope.submit = function(bill, isContinue) {
@@ -260,49 +311,56 @@ angular.module('starter.controllers', [])
             });
             return;
         }
+
+        var callback = function (result) {
+            $ionicViewService.nextViewOptions({
+              disableAnimate: true,
+              disableBack: true
+            });
+
+            if (Utils.isEmpty(isContinue) || isContinue == 0) {
+                $location.path("/tab/bills").search({year:year, month:month});
+            } else {
+                var params = {};
+                angular.forEach($stateParams, function(value, key) {
+                    params[key] = value;
+                });
+                $scope.bill.title = '';
+                $scope.bill.amount = '';
+                $scope.bill.description = '';
+                $stateParams.edit = 0;
+            }
+        };
+        var errback = function (error) {
+            $ionicPopup.alert({
+                title: 'Cannot execute.'
+            });
+        };
+
         bill.type = type;
         var postform = {};
         angular.forEach(bill, function(value, key) {
             postform[key] = value;
         });
+        var arrDate = postform.day.split('-');
+        postform.year = arrDate[0];
+        postform.month = arrDate[1];
+        postform.day = arrDate[2];
+        postform.title = postform.title ? postform.title : '';
+        postform.description = postform.description ? postform.description : '';
         if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
-            var resp = API.put('/bills/:bill_id', {
-                ':bill_id': $stateParams.id
-            }, postform);
+            DB.update('mm_bills', postform, { id: $stateParams.id }, callback, errback);
+            // var resp = API.put('/bills/:bill_id', {
+            //     ':bill_id': $stateParams.id
+            // }, postform);
         } else {
-            var resp = API.post('/bills', {}, postform);
-        }
-        if (resp.meta.code != 200) {
-            $ionicPopup.alert({
-                title: resp.meta.message
-            });
-            return;
-        }
-        Cache.removeAll();
-
-        $ionicViewService.nextViewOptions({
-          disableAnimate: true,
-          disableBack: true
-        });
-
-        if (Utils.isEmpty(isContinue) || isContinue == 0) {
-            $location.path("/tab/bills").search({year:year, month:month});
-        } else {
-            var params = {};
-            angular.forEach($stateParams, function(value, key) {
-                params[key] = value;
-            });
-            $scope.bill.title = '';
-            $scope.bill.amount = '';
-            $scope.bill.description = '';
-            $stateParams.edit = 0;
+            DB.insert('mm_bills', postform, {}, callback, errback);
+            // var resp = API.post('/bills', {}, postform);
         }
     }
 })
 
-.controller('TransfersCtrl', function($scope, $stateParams, $ionicPopup, $location, $state, MMAssetTransfer, MMCommon, Auth, API, Utils, Cache) {
-    Auth.requireLogin();
-
+.controller('TransfersCtrl', function($scope, $stateParams, $ionicPopup, $location, $state, MMAssetTransfer, MMCommon, Auth, API, Utils, Cache, DB) {
     var year = $stateParams.year;
     var month = $stateParams.month;
     if (Utils.isEmpty(year)) {
@@ -315,11 +373,25 @@ angular.module('starter.controllers', [])
         year: year,
         month: month
     };
-    $scope.transfers = MMAssetTransfer.getTransfersByMonth(month, year);
+    $scope.transfers = MMAssetTransfer.getTransfersByMonth(month, year, function(transfers) {
+        $scope.transfers = transfers;
+    });
 
     $scope.editTransfer = function(transfer) {
-        transfer.edit = 1;
-        $location.path('/tab/transfers/form').search(transfer);
+        $location.path('/tab/transfers/form').search({
+            id: transfer.id,
+            type: transfer.type,
+            year: transfer.year,
+            month: transfer.month,
+            day: transfer.day,
+            title: transfer.title,
+            description: transfer.description,
+            amount: transfer.amount,
+            fee: transfer.fee,
+            from_account_id: transfer.from_account_id,
+            to_account_id: transfer.to_account_id,
+            edit: 1
+        });
     }
     $scope.deleteTransfer = function(transfer) {
         var confirmPopup = $ionicPopup.confirm({
@@ -327,24 +399,21 @@ angular.module('starter.controllers', [])
         });
         confirmPopup.then(function(res) {
             if (res) {
-                var resp = API.delete('/transfers/:transfer_id', {
-                    ':transfer_id': transfer.id
-                }, {});
-                if (resp.meta.code != 200) {
+                DB.delete('mm_asset_transfers', { id: transfer.id }, function (result) {
+                    $state.go($state.current, {}, {reload: true});
+                }, function (error) {
                     $ionicPopup.alert({
-                        title: resp.meta.message
+                        title: 'Cannot delete.'
                     });
-                    return;
-                }
-                Cache.removeAll();
-                $state.go($state.current, {}, {reload: true});
+                });
+                // var resp = API.delete('/transfers/:transfer_id', {
+                //     ':transfer_id': transfer.id
+                // }, {});
             }
         });
     }
 })
-.controller('TransferFormCtrl', function($scope, $stateParams, $location, $ionicViewService, $ionicPopup, MMAssetTransfer, MMAsset, Utils, API, Cache, Auth) {
-    Auth.requireLogin();
-
+.controller('TransferFormCtrl', function($scope, $stateParams, $location, $ionicViewService, $ionicPopup, MMAssetTransfer, MMAsset, Utils, API, Cache, Auth, DB) {
     var year = $stateParams.year;
     var month = $stateParams.month;
     var day = $stateParams.day;
@@ -364,7 +433,9 @@ angular.module('starter.controllers', [])
     };
 
     // asset select
-    $scope.assets = MMAsset.getAssets();
+    $scope.assets = MMAsset.getAssets('', function (assets) {
+        $scope.assets = assets;
+    });
 
     $scope.transfer = {
         day: year + '-' + Utils.numPad(month, 2) + '-' + Utils.numPad(day, 2)
@@ -409,51 +480,110 @@ angular.module('starter.controllers', [])
             });
             return;
         }
+
+        var callback = function (result) {
+            $ionicViewService.nextViewOptions({
+              disableAnimate: true,
+              disableBack: true
+            });
+
+            $location.path("/tab/transfers").search({year:year, month:month});
+        };
+        var errback = function (error) {
+            $ionicPopup.alert({
+                title: 'Cannot execute.'
+            });
+        };
+
         var postform = {};
         angular.forEach(transfer, function(value, key) {
             postform[key] = value;
         });
+        var arrDate = postform.day.split('-');
+        postform.year = arrDate[0];
+        postform.month = arrDate[1];
+        postform.day = arrDate[2];
         if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
-            var resp = API.put('/transfers/:transfer_id', {
-                ':transfer_id': $stateParams.id
-            }, postform);
+            DB.update('mm_asset_transfers', postform, { id: $stateParams.id }, callback, errback);
+            // var resp = API.put('/transfers/:transfer_id', {
+            //     ':transfer_id': $stateParams.id
+            // }, postform);
         } else {
-            var resp = API.post('/transfers', {}, postform);
+            DB.insert('mm_asset_transfers', postform, {}, callback, errback);
+            // var resp = API.post('/transfers', {}, postform);
         }
-        if (resp.meta.code != 200) {
-            $ionicPopup.alert({
-                title: resp.meta.message
-            });
-            return;
-        }
-        Cache.removeAll();
-
-        $ionicViewService.nextViewOptions({
-          disableAnimate: true,
-          disableBack: true
-        });
-
-         $location.path("/tab/transfers").search({year:year, month:month});
     }
 })
 
-.controller('AssetsCtrl', function($scope, $stateParams, $ionicPopup, $location, $state, MMAsset, MMCommon, Auth, API, Utils, Cache) {
+.controller('BackupsCtrl', function($scope, $stateParams, $ionicLoading, $ionicPopup, $timeout, $location, $state, MMBackup, MMCommon, Auth, API, Utils, DB, Cache) {
     Auth.requireLogin();
 
-    $scope.assets = MMAsset.getAssets('?more=amount_current');
+    $scope.backups = MMBackup.getBackups();
 
-    $scope.editAsset = function(asset) {
-        asset.edit = 1;
-        $location.path('/tab/assets/form').search(asset);
-    }
-    $scope.deleteAsset = function(asset) {
+    MMBackup.getTotalRecords(function(total) {
+        $scope.totalRecords = total;
+    });
+
+    $scope.restoreBackup = function(backup) {
         var confirmPopup = $ionicPopup.confirm({
-            title: 'Are you sure to delete this Account?'
+            title: 'Are you sure to restore this Backup?'
         });
         confirmPopup.then(function(res) {
             if (res) {
-                var resp = API.delete('/assets/:asset_id', {
-                    ':asset_id': asset.id
+                $ionicLoading.show({
+                    template: '<i class="icon ion-looping"></i> Restoring...'
+                });
+                $timeout(function() {
+                    MMBackup.resetDb();
+                    var queries = [];
+                    queries = MMBackup.restore(backup.name, 'mm_asset_groups');
+                    queries = queries.concat(MMBackup.restore(backup.name, 'mm_assets'));
+                    queries = queries.concat(MMBackup.restore(backup.name, 'mm_asset_transfers'));
+                    queries = queries.concat(MMBackup.restore(backup.name, 'mm_categories'));
+                    queries = queries.concat(MMBackup.restore(backup.name, 'mm_budgets'));
+                    queries = queries.concat(MMBackup.restore(backup.name, 'mm_bills'));
+                    DB.executeMultipleQueries(queries);
+                    $ionicLoading.hide();
+                }, 100);
+            }
+        });
+    }
+    $scope.saveBackup = function(backup) {
+        var confirmPopup = $ionicPopup.confirm({
+            title: 'Are you sure to save all data to this Backup?'
+        });
+        confirmPopup.then(function(res) {
+            if (res) {
+                $ionicLoading.show({
+                    template: '<i class="icon ion-looping"></i> Saving...'
+                });
+                $timeout(function() {
+                    MMBackup.newBackup(backup.name);
+                    MMBackup.backup(backup.name, 'mm_asset_groups', function() {
+                        MMBackup.backup(backup.name, 'mm_assets', function() {
+                            MMBackup.backup(backup.name, 'mm_asset_transfers', function() {
+                                MMBackup.backup(backup.name, 'mm_categories', function() {
+                                    MMBackup.backup(backup.name, 'mm_budgets', function() {
+                                        MMBackup.backup(backup.name, 'mm_bills', function() {
+                                            $ionicLoading.hide();
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                }, 100);
+            }
+        });
+    }
+    $scope.deleteBackup = function(backup) {
+        var confirmPopup = $ionicPopup.confirm({
+            title: 'Are you sure to delete this Backup?'
+        });
+        confirmPopup.then(function(res) {
+            if (res) {
+                var resp = API.delete('/backups/:filename', {
+                    ':filename': backup.name
                 }, {});
                 if (resp.meta.code != 200) {
                     $ionicPopup.alert({
@@ -461,17 +591,89 @@ angular.module('starter.controllers', [])
                     });
                     return;
                 }
-                Cache.removeAll();
                 $state.go($state.current, {}, {reload: true});
             }
         });
     }
 })
-.controller('AssetFormCtrl', function($scope, $stateParams, $location, $ionicViewService, $ionicPopup, MMAsset, Utils, API, Cache, Auth) {
+.controller('BackupsFormCtrl', function($scope, $stateParams, $ionicLoading, $ionicPopup, $timeout, $location, $state, MMBackup, MMCommon, Auth, API, Utils, DB, Cache) {
     Auth.requireLogin();
 
+    $scope.submit = function(backup) {
+        backup = backup || '';
+        var validator = /^[0-9a-zA-Z_-]+$/;
+        if (!backup.name.match(validator)) {
+            $ionicPopup.alert({
+                title: 'Name contains invalid characters.'
+            });
+            return;
+        }
+        $ionicLoading.show({
+            template: '<i class="icon ion-looping"></i> Saving...'
+        });
+        $timeout(function() {
+            MMBackup.newBackup(backup.name);
+            MMBackup.backup(backup.name, 'mm_asset_groups', function() {
+                MMBackup.backup(backup.name, 'mm_assets', function() {
+                    MMBackup.backup(backup.name, 'mm_asset_transfers', function() {
+                        MMBackup.backup(backup.name, 'mm_categories', function() {
+                            MMBackup.backup(backup.name, 'mm_budgets', function() {
+                                MMBackup.backup(backup.name, 'mm_bills', function() {
+                                    $ionicLoading.hide();
+                                    $location.path("/tab/backups");
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        }, 100);
+    }
+})
+
+.controller('AssetsCtrl', function($scope, $stateParams, $ionicPopup, $location, $state, MMAsset, MMCommon, Auth, API, Utils, Cache, DB) {
+    $scope.assets = MMAsset.getAssets('?more=amount_current', function(assets) {
+        $scope.assets = assets;
+    });
+
+    $scope.editAsset = function(asset) {
+        $location.path('/tab/assets/form').search({
+            id: asset.id,
+            group_id: asset.group_id,
+            title: asset.title,
+            description: asset.description,
+            amount: asset.amount,
+            keep_amount: asset.keep_amount,
+            is_save_account: asset.is_save_account,
+            is_enable: asset.is_enable,
+            edit: 1
+        });
+    }
+    $scope.deleteAsset = function(asset) {
+        var confirmPopup = $ionicPopup.confirm({
+            title: 'Are you sure to delete this Account?'
+        });
+        confirmPopup.then(function(res) {
+            if (res) {
+                DB.delete('mm_assets', { id: asset.id }, function (result) {
+                    $state.go($state.current, {}, {reload: true});
+                }, function (error) {
+                    $ionicPopup.alert({
+                        title: 'Cannot delete.'
+                    });
+                });
+                // var resp = API.delete('/assets/:asset_id', {
+                //     ':asset_id': asset.id
+                // }, {});
+            }
+        });
+    }
+})
+.controller('AssetFormCtrl', function($scope, $stateParams, $location, $ionicViewService, $ionicPopup, MMAsset, Utils, API, Cache, Auth, DB) {
     // asset select
-    $scope.groups = MMAsset.getGroups();
+    $scope.groups = MMAsset.getGroups(function (groups) {
+        $scope.groups = groups;
+    });
 
     $scope.asset = {
         is_save_account: false
@@ -508,32 +710,35 @@ angular.module('starter.controllers', [])
             });
             return;
         }
+
+        var callback = function (result) {
+            $ionicViewService.nextViewOptions({
+              disableAnimate: true,
+              disableBack: true
+            });
+
+             $location.path("/tab/assets").search({year:year, month:month});
+        };
+        var errback = function (error) {
+            $ionicPopup.alert({
+                title: 'Cannot execute.'
+            });
+        };
+
         var postform = {};
         angular.forEach(asset, function(value, key) {
             postform[key] = value;
         });
         postform.is_save_account = asset.is_save_account == false ? 0 : 1;
         if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
-            var resp = API.put('/assets/:asset_id', {
-                ':asset_id': $stateParams.id
-            }, postform);
+            DB.update('mm_assets', postform, { id: $stateParams.id }, callback, errback);
+            // var resp = API.put('/assets/:asset_id', {
+            //     ':asset_id': $stateParams.id
+            // }, postform);
         } else {
-            var resp = API.post('/assets', {}, postform);
+            DB.insert('mm_assets', postform, {}, callback, errback);
+            // var resp = API.post('/assets', {}, postform);
         }
-        if (resp.meta.code != 200) {
-            $ionicPopup.alert({
-                title: resp.meta.message
-            });
-            return;
-        }
-        Cache.removeAll();
-
-        $ionicViewService.nextViewOptions({
-          disableAnimate: true,
-          disableBack: true
-        });
-
-         $location.path("/tab/assets").search({year:year, month:month});
     }
 })
 

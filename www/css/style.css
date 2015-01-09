@@ -59,6 +59,17 @@
   direction:ltr !important;
 }
 
+fancy-calc {
+  width: 100%;
+  cursor: pointer;
+}
+
+fancy-calc .display-value {
+  width: 100%;
+  font-size: 14px;
+  margin: 8px 0px;
+}
+
 fancy-calc .margin-right {
   margin-right: 16px;
 }

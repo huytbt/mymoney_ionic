@@ -42,6 +42,11 @@
         <ion-nav-view name="tab-assets"></ion-nav-view>
       </ion-tab>
 
+      <!-- Common Tab -->
+      <ion-tab hidden="true" title="Hidden" icon="icon ion-filing" ng-click="goToPage('/tab/assets')">
+        <ion-nav-view name="tab-hidden"></ion-nav-view>
+      </ion-tab>
+
     </ion-tabs>
   </ion-side-menu-content>
 
@@ -64,11 +69,11 @@
         <ion-item nav-clear ui-sref="tab.asset" ui-sref-active="activated" menu-close ng-click="goToPage('/tab/assets')">
           <i class="icon ion-filing"></i> Assets
         </ion-item>
+        <ion-item nav-clear ui-sref="tab.backups" ui-sref-active="activated" menu-close ng-click="goToPage('/tab/backups')">
+          <i class="icon ion-gear-b"></i> Backup
+        </ion-item>
         <ion-item nav-clear menu-close ng-click="goCurrentDay()">
           <i class="icon ion-ionic"></i> Go Today
-        </ion-item>
-        <ion-item nav-clear menu-close ng-click="reloadAll()">
-          <i class="icon ion-refresh"></i> Reload
         </ion-item>
         <ion-item nav-clear menu-close href="#/login">
           <i class="icon ion-log-out"></i> Logout

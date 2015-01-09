@@ -1,4 +1,11 @@
 <ion-view title="{{transferRequests.year}}-{{transferRequests.month}}">
+  <ion-header-bar class="bar-subheader bar-positive">
+    <div class="buttons" ng-controller="CommonCtrl">
+      <button class="button button-royal" ng-click="goToPage('/tab/transfers/form')">
+        Transfer on {{transferRequests.month}}/{{transferRequests.year}}
+      </button>
+    </div>
+  </ion-header-bar>
   <ion-content>
     <div class="list-not-found" ng-show="transfers.length==0">
       Transfers Not Found

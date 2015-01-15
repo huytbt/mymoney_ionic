@@ -268,18 +268,18 @@ angular.module('starter.directives', [])
             }
 
             scope.done = function () {
-                scope.value = parseInt(scope.calcValue);
+                scope.value = parseInt(Math.round(scope.calcValue));
                 scope.modal.hide();
             }
 
             scope.btn = function(btn) {
                 var clc = function(a, b, o) {
-                    if (o == '+') return parseInt(a) + parseInt(b);
-                    else if (o == '-') return parseInt(a) - parseInt(b);
-                    else if (o == '*') return parseInt(a) * parseInt(b);
+                    if (o == '+') return Number(a) + Number(b);
+                    else if (o == '-') return Number(a) - Number(b);
+                    else if (o == '*') return Number(a) * Number(b);
                     else if (o == '/') {
-                        if (parseInt(a) == 0) return '#ERROR';
-                        else return parseInt(a) * parseInt(b);
+                        if (Number(a) == 0) return '#ERROR';
+                        else return Number(a) / Number(b);
                     };
                 };
                 if (btn == '+' || btn == '-' || btn == '*' || btn == '/') {
@@ -296,6 +296,15 @@ angular.module('starter.directives', [])
                         scope.calcValue = clc(scope.memValue, scope.calcValue, scope.operator);
                     }
                     scope.memValue = '';
+                } else if (btn == '<-') {
+                    if (scope.calcValue != 0) {
+                        var sNum = scope.calcValue.toString();
+                        sNum = sNum.substr(0, sNum.length - 1);
+                        if (sNum.length == 0) {
+                            sNum = '0';
+                        }
+                        scope.calcValue = parseInt(sNum);
+                    }
                 } else if (btn == 'ce') {
                     scope.calcValue = 0;
                 } else if (btn == 'c') {

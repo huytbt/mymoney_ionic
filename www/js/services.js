@@ -215,6 +215,22 @@ angular.module('starter.services', [])
       }
 
       return [];
+    },
+    getCategory: function(id, callback) {
+      var cacheKey = 'category' + id;
+      var cache = Cache.get(cacheKey);
+
+      DB.query('SELECT * FROM mm_categories WHERE id=?', [id]).then(function(result) {
+        category = DB.fetch(result);
+        Cache.put(cacheKey, category);
+        if (typeof callback == 'function') callback(category);
+      });
+
+      if (!Utils.isEmpty(cache)) {
+        return cache;
+      }
+
+      return null;
     }
   }
 })

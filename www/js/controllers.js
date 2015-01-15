@@ -133,7 +133,6 @@ angular.module('starter.controllers', [])
             });
         };
         var errback = function (error) {
-            console.log(error);
             $ionicPopup.alert({
                 title: 'Cannot execute.'
             });
@@ -146,16 +145,19 @@ angular.module('starter.controllers', [])
         postform.day_tracking = budget.tracking == false ? 0 : 1;
         postform.description = budget.description | "";
         delete(postform.tracking);
-        postform.type = budget.type == 'Income' ? 0 : 1;
-        if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
-            DB.update('mm_budgets', postform, {id: $stateParams.budget_id}, callback, errback);
-            // var resp = API.put('/budgets/:budget_id', {
-            //     ':budget_id': $stateParams.budget_id
-            // }, postform);
-        } else {
-            DB.insert('mm_budgets', postform, {}, callback, errback);
-            // var resp = API.post('/budgets', {}, postform);
-        }
+        MMCategory.getCategory(budget.category_id, function (category) {
+
+            postform.type = category.type;
+            if (!Utils.isEmpty($stateParams.edit) && $stateParams.edit == 1) {
+                DB.update('mm_budgets', postform, {id: $stateParams.budget_id}, callback, errback);
+                // var resp = API.put('/budgets/:budget_id', {
+                //     ':budget_id': $stateParams.budget_id
+                // }, postform);
+            } else {
+                DB.insert('mm_budgets', postform, {}, callback, errback);
+                // var resp = API.post('/budgets', {}, postform);
+            }
+        });
     }
 })
 

@@ -363,6 +363,8 @@ angular.module('starter.services', [])
       var cache = Cache.get(cacheKey);
 
       var arrBills = [];
+      var monthNames = [ 'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December' ];
 
       // get days has bill of month
       select = 'SELECT day ';
@@ -403,12 +405,22 @@ angular.module('starter.services', [])
             if (!Utils.isEmpty(budget_id)) {
                 totalParams.budget_id = budget_id;
             }
+            var totalExpenseAmount = 0;
+            var totalIncomeAmount = 0;
+            angular.forEach(bills, function (bill, index) {
+              if (bill.type == 0) {
+                totalIncomeAmount += bill.amount
+              }
+              if (bill.type == 1) {
+                totalExpenseAmount += bill.amount
+              }
+            });
             arrBills[arrBills.length] = {
               day: bill.day,
-              year_month: '',
+              year_month: year + ' ' + monthNames[month - 1].substr(0, 3),
               bills: bills,
-              totalExpenseAmount: 0,
-              totalIncomeAmount: 0
+              totalExpenseAmount: totalExpenseAmount,
+              totalIncomeAmount: totalIncomeAmount
             };
 
             if (key == daysHasBills.length - 1) {

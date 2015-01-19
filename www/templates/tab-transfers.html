@@ -1,8 +1,8 @@
-<ion-view title="{{transferRequests.year}}-{{transferRequests.month}}">
+<ion-view title="{{transferRequests.year}} {{transferRequests.month | monthName}}">
   <ion-header-bar class="bar-subheader bar-positive">
     <div class="buttons" ng-controller="CommonCtrl">
       <button class="button button-royal" ng-click="goToPage('/tab/transfers/form')">
-        Transfer on {{transferRequests.month}}/{{transferRequests.year}}
+        Transfer on {{transferRequests.month | monthName}} {{transferRequests.year}}
       </button>
     </div>
   </ion-header-bar>
@@ -32,7 +32,7 @@
     </ion-list>
     <div ng-controller="CommonCtrl">
       <button class="button button-full button-royal" ng-click="goToPage('/tab/transfers/form')">
-        Transfer on {{transferRequests.month}}/{{transferRequests.year}}
+        Transfer on {{transferRequests.month | monthName}} {{transferRequests.year}}
       </button>
     </div>
   </ion-content>

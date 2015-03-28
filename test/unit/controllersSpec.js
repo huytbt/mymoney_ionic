@@ -5,7 +5,7 @@ describe('Budget controllers', function() {
 
   describe('BudgetCtrl', function(){
 
-    beforeEach(module('phonecatApp'));
+    beforeEach(module('starter'));
 
     it('should create "phones" model with 3 phones', inject(function($controller) {
       var scope = {},

@@ -6,6 +6,7 @@ module.exports = function(config){
     files : [
       // 'www/lib/ionic/js/angular/angular.js',
       'www/lib/ionic/js/ionic.bundle.js',
+      'www/lib/ionic/js/angular/angular-cookies.js',
       'www/lib/angular-mocks/angular-mocks.js',
       'www/js/*.js',
       'test/unit/**/*.js'

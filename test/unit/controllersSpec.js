@@ -1,18 +1,17 @@
-'use strict';
-
-/* jasmine specs for controllers go here */
-describe('Budget controllers', function() {
-
-  describe('BudgetCtrl', function(){
-
-    beforeEach(module('starter'));
-
-    it('should create "phones" model with 3 phones', inject(function($controller) {
-      var scope = {},
-          ctrl = $controller('BudgetCtrl', {$scope:scope});
-
-      expect(scope.phones.length).toBe(3);
+describe('BudgetCtrl', function(){
+    var scope;//we'll use this scope in our tests
+ 
+    //mock starter to allow us to inject our own dependencies
+    beforeEach(angular.mock.module('starter', 'starter.controllers'));
+    //mock the controller for the same reason and include $rootScope and $controller
+    beforeEach(angular.mock.inject(function($rootScope, $controller){
+        //create an empty scope
+        scope = $rootScope.$new();
+        //declare the controller and inject our empty scope
+        $controller('BudgetCtrl', {$scope: scope});
     }));
-
-  });
+    // tests start here
+     it('should have variable text = "Hello World!"', function(){
+        expect(scope.text).toBe('Hello World!');
+    });
 });

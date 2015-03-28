@@ -11,7 +11,7 @@ describe('BudgetCtrl', function(){
         $controller('BudgetCtrl', {$scope: scope});
     }));
     // tests start here
-     it('should have variable text = "Hello World!"', function(){
-        expect(scope.text).toBe('Hello World!');
+     it('should declair a function = "goBills"', function(){
+        expect(typeof scope.goBills).toEqual('function');
     });
 });
